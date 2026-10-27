@@ -33,6 +33,10 @@ Limits: 50 GiB per file, 4 MiB per chunk, 100 active jobs, 24-hour job expiry, a
 
 Standalone mode is separate from the native plugin. It uses a dedicated unprivileged OS identity, a private ingestion root, a separately protected endpoint, and job-bound grants. It must not have write mounts/ACLs for existing libraries. One importer process per root is supported. Existing media must remain outside its writable namespace. See `docs/provisioning.md`; none of these OS boundaries can be inferred solely from a successful API response.
 
+## Dependency maintenance
+
+The v0.1.1 preview updates the MCP SDK/Zod and transitive dependencies to address the advisories reported by the initial lockfile audit. Production dependency auditing reported zero known vulnerabilities on October 27, 2026. The initial v0.1.0 source remains retained as an immutable, superseded preview; use the newer release. Dependency alerts are read-only notifications, not permission for automated repository changes.
+
 ## Preview limitations
 
 Local tests do not establish production network, account, ACL, crash/power-loss, metadata matching, or indexing behavior. Upload completion is not proof of indexing. There is no absolute no-data-loss guarantee. Evaluate the preview with a small sample and a current backup before considering wider use.

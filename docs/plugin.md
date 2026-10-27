@@ -57,7 +57,7 @@ npm ci --ignore-scripts
 
 Use `DOTNET_BINARY=/absolute/path/to/dotnet` if the SDK is not on PATH. Validation runs locally; no GitHub Actions workflow is used.
 
-The output is `artifacts/WatermelonFin.Upload-0.1.0.0.zip`, containing the plugin assembly and license/notices. A source archive is not an installable plugin package.
+The output is `artifacts/WatermelonFin.Upload-0.1.1.0.zip`, containing the plugin assembly and license/notices. A source archive is not an installable plugin package.
 
 To generate a catalog entry, supply the actual server-accessible HTTPS URL of the corresponding published ZIP:
 

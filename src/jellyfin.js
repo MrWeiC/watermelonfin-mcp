@@ -15,7 +15,7 @@ export function baseURL(value) {
 }
 async function readJSON(url,token,login) {
  let r;
- try{r=await fetch(url,{method:'GET',redirect:'manual',signal:AbortSignal.timeout(3500),headers:login?{'Content-Type':'application/json','X-Emby-Authorization':`MediaBrowser Client="WatermelonFin MCP", Device="Local Agent", DeviceId="${deviceId}", Version="0.1.0"`}:token?{'X-Emby-Token':token}:{} ,...(login?{method:'POST',body:JSON.stringify(login)}:{})});}catch{throw new Error('Server unreachable or TLS verification failed');}
+ try{r=await fetch(url,{method:'GET',redirect:'manual',signal:AbortSignal.timeout(3500),headers:login?{'Content-Type':'application/json','X-Emby-Authorization':`MediaBrowser Client="WatermelonFin MCP", Device="Local Agent", DeviceId="${deviceId}", Version="0.1.1"`}:token?{'X-Emby-Token':token}:{} ,...(login?{method:'POST',body:JSON.stringify(login)}:{})});}catch{throw new Error('Server unreachable or TLS verification failed');}
  return parseResponse(r);
 }
 async function parseResponse(r){
