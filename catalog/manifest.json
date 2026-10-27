@@ -8,11 +8,11 @@
     "overview": "Restricted native media uploads",
     "versions": [
       {
-        "version": "0.1.0.0",
+        "version": "0.1.1.0",
         "targetAbi": "12.4.0.0",
-        "sourceUrl": "https://github.com/MrWeiC/watermelonfin-mcp/releases/download/v0.1.0/WatermelonFin.Upload-0.1.0.0.zip",
-        "checksum": "a01c04fd97dca7cc16d99035f9e3c8a8",
-        "changelog": "Early preview: built for Jellyfin 12.4.0; native upload API with restricted users and no delete/overwrite endpoints. Full-server loading and indexing remain unverified."
+        "sourceUrl": "https://github.com/MrWeiC/watermelonfin-mcp/releases/download/v0.1.1/WatermelonFin.Upload-0.1.1.0.zip",
+        "checksum": "0eecc5c59b6a1513903c59f3d2fe06c8",
+        "changelog": "Early preview 0.1.1: refreshed MCP dependencies; restricted native uploads for Jellyfin 12.4.0. Full-server loading and indexing remain unverified."
       }
     ]
   }
