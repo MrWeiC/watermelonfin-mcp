@@ -1,1 +1,19 @@
-[]
+[
+  {
+    "category": "General",
+    "guid": "cbe3ae89-5d55-4e89-bb49-cb09af9b9bfe",
+    "name": "WatermelonFin Upload",
+    "description": "Additive uploads for WatermelonFin MCP; no delete or overwrite API.",
+    "owner": "MrWeiC",
+    "overview": "Restricted native media uploads",
+    "versions": [
+      {
+        "version": "0.1.0.0",
+        "targetAbi": "12.4.0.0",
+        "sourceUrl": "https://github.com/MrWeiC/watermelonfin-mcp/releases/download/v0.1.0/WatermelonFin.Upload-0.1.0.0.zip",
+        "checksum": "a01c04fd97dca7cc16d99035f9e3c8a8",
+        "changelog": "Early preview: built for Jellyfin 12.4.0; native upload API with restricted users and no delete/overwrite endpoints. Full-server loading and indexing remain unverified."
+      }
+    ]
+  }
+]

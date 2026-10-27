@@ -71,6 +71,12 @@ HTTPS uses normal certificate verification. HTTP credentials require prior estab
 
 ## Native upload plugin
 
+The [v0.1.0 pre-release](https://github.com/MrWeiC/watermelonfin-mcp/releases/tag/v0.1.0) contains the compiled plugin ZIP and SHA-256 checksum. The official Jellyfin plugin repository URL is:
+
+```text
+https://raw.githubusercontent.com/MrWeiC/watermelonfin-mcp/main/catalog/manifest.json
+```
+
 See [the plugin guide](docs/plugin.md) for installation, configuration, endpoint details, and deployment limits.
 
 1. Install the published plugin through Jellyfin's plugin repository/catalog and restart Jellyfin.
