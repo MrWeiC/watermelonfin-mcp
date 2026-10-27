@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "watermelonfin": {
+      "command": "node",
+      "args": ["/absolute/path/watermelonfin-mcp/src/cli.js"]
+    }
+  }
+}

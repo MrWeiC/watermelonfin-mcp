@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html><head><title>WatermelonFin Upload</title></head><body>
+<div id="watermelonfinUploadPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox,emby-textarea">
+<div data-role="content"><div class="content-primary"><form id="watermelonfinUploadForm">
+<h2>WatermelonFin Upload</h2>
+<p>Only new files can be imported. No delete, overwrite, or arbitrary destination API is provided.</p>
+<p>This native plugin shares Jellyfin's operating-system permissions. It is not a separate filesystem sandbox.</p>
+<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="wfEnabled"/><span>Enable uploads</span></label></div>
+<div class="inputContainer"><label class="inputLabel" for="wfUsers">Allowed restricted user IDs (comma separated)</label><input is="emby-input" id="wfUsers"/><div class="fieldDescription">Use a non-administrator Jellyfin user with all content-deletion permissions disabled. Empty list denies everyone.</div></div>
+<div class="inputContainer"><label class="inputLabel" for="wfTargets">Targets (JSON)</label><textarea is="emby-textarea" id="wfTargets" rows="10"></textarea><div class="fieldDescription">Fields: Id, Name, Kind. Kind is movies, tv, or other. No filesystem paths are accepted.</div></div>
+<h3>Library source paths</h3><pre id="wfPaths"></pre><p>Add each Imported target path to the intended Jellyfin library through Dashboard → Libraries. Never add the Staging directory.</p>
+<p id="wfError" role="alert"></p><button is="emby-button" type="submit" class="raised button-submit block"><span>Save</span></button>
+</form></div></div>
+<script type="text/javascript">
+(function(){
+'use strict';var pluginId='cbe3ae89-5d55-4e89-bb49-cb09af9b9bfe',page=document.querySelector('#watermelonfinUploadPage');
+page.addEventListener('pageshow',function(){Dashboard.showLoadingMsg();ApiClient.getPluginConfiguration(pluginId).then(function(c){page.querySelector('#wfEnabled').checked=c.Enabled;page.querySelector('#wfUsers').value=(c.AllowedUserIds||[]).join(', ');page.querySelector('#wfTargets').value=JSON.stringify(c.Targets||[],null,2);return ApiClient.getJSON(ApiClient.getUrl('WatermelonFin/Upload/AdminInfo'));}).then(function(info){page.querySelector('#wfPaths').textContent=(info.targets||[]).map(function(t){return t.name+': '+t.librarySourcePath;}).join('\n');}).catch(function(){page.querySelector('#wfError').textContent='Unable to read plugin configuration. Administrator access is required.';}).finally(function(){Dashboard.hideLoadingMsg();});});
+page.querySelector('#watermelonfinUploadForm').addEventListener('submit',function(e){e.preventDefault();page.querySelector('#wfError').textContent='';var targets,users;try{targets=JSON.parse(page.querySelector('#wfTargets').value);users=page.querySelector('#wfUsers').value.split(',').map(function(s){return s.trim();}).filter(Boolean);if(!Array.isArray(targets)||targets.length<1||targets.length>20||new Set(targets.map(function(t){return t.Id;})).size!==targets.length||targets.some(function(t){return Object.keys(t).some(function(k){return !['Id','Name','Kind'].includes(k);})||!/^[a-z0-9][a-z0-9-]{0,40}$/.test(t.Id)||typeof t.Name!=='string'||!t.Name.trim()||t.Name.length>100||!['movies','tv','other'].includes(t.Kind);})||users.some(function(u){return !/^(?:[a-f0-9]{32}|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i.test(u);}))throw new Error();}catch(_){page.querySelector('#wfError').textContent='Invalid targets or user IDs. Use canonical GUID user IDs and the documented target fields.';return;}
+Dashboard.showLoadingMsg();ApiClient.getPluginConfiguration(pluginId).then(function(c){c.Enabled=page.querySelector('#wfEnabled').checked;c.AllowedUserIds=users;c.Targets=targets;return ApiClient.updatePluginConfiguration(pluginId,c);}).then(function(r){Dashboard.processPluginConfigurationUpdateResult(r);}).catch(function(){page.querySelector('#wfError').textContent='Saving failed.';}).finally(function(){Dashboard.hideLoadingMsg();});});
+})();
+</script></div></body></html>

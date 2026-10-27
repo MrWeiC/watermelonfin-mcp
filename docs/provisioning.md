@@ -1,0 +1,18 @@
+# Optional standalone-importer provisioning recipe
+
+Native Jellyfin plugin users do not need this recipe or SSH. Use [the plugin guide](plugin.md) instead.
+
+This recipe is executed by the local Agent using separately authorized host-management tools, not through a privileged MCP tool. Never put administrator credentials into daily MCP environment variables.
+
+1. Discover the supplied Jellyfin host and reachable endpoint. Establish device trust. If SSH/management authorization is absent, request that specific authorization instead of asking the user to perform installation manually.
+2. Inspect OS, Docker/container mounts, Jellyfin service identity, existing library roots, available Node runtime, filesystem support and disk space. Read-only detection first. Do not assume the local agent's OS describes the remote host.
+3. Establish a **new dedicated ingestion root** on a filesystem supporting atomic hard links. Create a dedicated unprivileged service identity with write access only there and application code read access. Existing media must be inaccessible for writes. Container alternative: importer only gets its new volume; Jellyfin mounts `Imports` read-only. Never give importer Docker socket, root, host filesystem, or existing library write mounts.
+4. Deploy this exact reviewed package, run `npm ci --ignore-scripts`, and run local validation before starting the service. Generate a random 32+ character secret using the host credential flow. Store it in a host secret manager/service credential file protected from other accounts. This recipe is a contract, not an automatic platform-specific installer; service lifecycle configuration is performed by the host Agent.
+5. Start `src/importer-cli.js` as that identity, with the dedicated root and secret. It binds 127.0.0.1:9784. Set up a private HTTPS reverse proxy scoped to this service (Tailscale Serve can proxy the local port); preserve an existing Serve config rather than replacing routes blindly. Do not use public Funnel.
+6. With temporary administrator authorization, add **a new** Jellyfin media library pointed only at `<root>/Imports`; preserve all existing libraries and paths. Configure real-time monitoring if supported. Do not point a library at root or `.staging`. The current UUID namespace organization must be verified with the user's actual library types; use a mixed library for initial evaluation and verify metadata results before declaring automatic classification successful.
+7. Create or reuse a restricted daily Jellyfin user with no content deletion, no administrator role and only required library visibility. Establish its secure token and configure `WATERMELONFIN_PROFILES`. Revoke/discard setup credentials from the daily process.
+8. Configure importer endpoint/secret and narrow local upload roots in the host MCP environment. Restart MCP and check `inspect_capabilities`; configured does not mean live verified.
+9. Upload a small selected media file, verify bytes/hash, check Jellyfin indexing separately, then compare existing library directory entries/hashes. Confirm unsupported/delete/overwrite calls fail.
+10. Pairing with iPhone/iPad/Apple TV is not implemented in this package. Export non-secret connection data for the future client integration; do not claim app configuration or VPN setup completed.
+
+Supported application runtime: Node 22+. Tested filesystem behavior: temporary local macOS directories in this development run. Platform-specific systemd/Windows Service/container installers, remote trust bootstrap, and actual Jellyfin integration must be validated against the target host; the Agent must report gaps rather than silently relaxing the boundary.
