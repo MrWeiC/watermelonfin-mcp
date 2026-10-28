@@ -41,7 +41,8 @@ public sealed class ImportMetadataStore(UploadStore uploads)
     {
         Revision(state.Revision);
         if(state.Files==null || state.Files.Count!=Names.Length || Names.Any(n=>!state.Files.ContainsKey(n)) || state.Files.Any(f=>f.Value?.Length>Limit(f.Key)))throw new UploadException("Invalid metadata revision content");
-        if(state.Metadata!=null){state.Metadata.Document.Validate();if(state.Metadata.LockedFields==null || state.Metadata.LockedFields.Length>100 || state.Metadata.LockedFields.Any(s=>s.Length>100))throw new UploadException("Invalid metadata lock snapshot");}
+        if(state.Metadata!=null){state.Metadata.Document.Validate();if(state.Metadata.LockedFields==null || state.Metadata.LockedFields.Length>100 || state.Metadata.LockedFields.Any(s=>s.Length>100))throw new UploadException("Invalid metadata lock snapshot");
+            if(state.Metadata.ArtworkPaths is { } paths && (paths.Count>2 || paths.Any(p=>p.Key is not ("primary" or "backdrop") || p.Value?.Length>4096)))throw new UploadException("Invalid artwork snapshot");}
     }
     private static async Task<ImportMetadataState> ReadState(CompletedImport import,string name)
     {
@@ -68,10 +69,10 @@ public sealed class ImportMetadataStore(UploadStore uploads)
     {Revision(expected);if(state.Revision!=expected)throw new UploadException("Metadata revision conflict; inspect the import again",409);}
     private static async Task<ImportMetadataState> Commit(CompletedImport import,ImportMetadataState before,ImportMetadataState after)
     {
+        after=after with{Revision=Guid.NewGuid().ToString("D"),Pending=true};ValidateState(after);
         if(Directory.EnumerateFiles(import.JournalDirectory,"metadata-revision-*.json").Take(100).Count()>=100)throw new UploadException("Metadata revision quota reached",409);
         var backup="metadata-revision-"+before.Revision+".json";
         if(!SafePaths.IsFile(Path.Combine(import.JournalDirectory,backup)))await SaveState(import,backup,before);
-        after=after with{Revision=Guid.NewGuid().ToString("D"),Pending=true};
         await SaveState(import,"metadata-current.json",after);
         await Materialize(import,after);
         after=after with{Pending=false};await SaveState(import,"metadata-current.json",after);return after;
@@ -81,8 +82,8 @@ public sealed class ImportMetadataStore(UploadStore uploads)
     public Task<ImportMetadataState> Apply(Guid owner,Guid job,string expected,MetadataDocument document,MetadataSnapshot? baseline=null)
         =>WithImport(owner,job,async import=>{
             document.Validate();var before=await Current(import,baseline);Expected(before,expected);
-            var files=new Dictionary<string,byte[]?>(before.Files){["movie.nfo"]=document.Nfo()};
-            return await Commit(import,before,new("",new(document,true,[]),files));
+            var files=new Dictionary<string,byte[]?>(before.Files){["movie.nfo"]=document.Nfo(before.Files["movie.nfo"])};
+            return await Commit(import,before,new("",new(document,true,[],before.Metadata?.ArtworkPaths),files));
         });
     public Task<ImportMetadataState> SetArtwork(Guid owner,Guid job,string expected,string role,byte[] bytes,MetadataSnapshot? baseline=null)
         =>WithImport(owner,job,async import=>{
@@ -95,4 +96,8 @@ public sealed class ImportMetadataStore(UploadStore uploads)
             Revision(revision);var before=await Current(import,baseline);Expected(before,expected);var saved=await ReadState(import,"metadata-revision-"+revision+".json");
             if(saved.Revision!=revision)throw new UploadException("Metadata revision mismatch");return await Commit(import,before,saved);
         });
+    public Task<string[]> History(Guid owner,Guid job)=>WithImport(owner,job,import=>{
+        var names=Directory.EnumerateFiles(import.JournalDirectory,"metadata-revision-*.json").Take(101).ToArray();if(names.Length>100)throw new UploadException("Invalid metadata history");
+        var revisions=new List<string>();foreach(var name in names){SafePaths.IsFile(name);var id=Path.GetFileName(name)[18..^5];Revision(id);revisions.Add(id);}return Task.FromResult(revisions.ToArray());
+    });
 }

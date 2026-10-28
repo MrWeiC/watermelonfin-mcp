@@ -30,12 +30,7 @@ public sealed class UploadController(IAuthorizationContext authorization, Upload
     }
     private async Task<Guid> RequireUser()
     {
-        var info=await authorization.GetAuthorizationInfo(HttpContext);
-        var user=info.User;
-        bool Has(PermissionKind k)=>user?.Permissions.Any(p=>p.Kind==k&&p.Value)==true;
-        var canDelete=Has(PermissionKind.EnableContentDeletion)||user?.Preferences.Any(p=>p.Kind==PreferenceKind.EnableContentDeletionFromFolders&&!string.IsNullOrWhiteSpace(p.Value))==true;
-        UploadAccess.Require(new(Config.Enabled,info.IsAuthenticated&&user!=null&&info.UserId!=Guid.Empty&&!Has(PermissionKind.IsDisabled),info.IsApiKey,Has(PermissionKind.IsAdministrator),canDelete,(Config.AllowedUserIds??[]).Contains(info.UserId)));
-        return info.UserId;
+        return await UploadAuthorization.RequireUser(authorization,HttpContext,Config);
     }
     private async Task<Guid> RequireJob(Guid id)
     {
@@ -51,7 +46,7 @@ public sealed class UploadController(IAuthorizationContext authorization, Upload
         catch(UnauthorizedAccessException){return StatusCode(503,new { error="Upload storage permissions do not allow this operation" });}
     }
     [HttpGet("Capabilities")]
-    public Task<ActionResult> Capabilities()=>Safe(async()=>{await RequireUser();return new {protocol="watermelonfin-upload.v1",enabled=true,delete=false,overwrite=false,maxChunkBytes=UploadStore.MaximumChunkBytes,maxFileBytes=UploadStore.MaximumFileBytes};});
+    public Task<ActionResult> Capabilities()=>Safe(async()=>{await RequireUser();return new {protocol="watermelonfin-upload.v1",enabled=true,delete=false,overwrite=false,maxChunkBytes=UploadStore.MaximumChunkBytes,maxFileBytes=UploadStore.MaximumFileBytes,metadataProtocol="watermelonfin-metadata.v1",ownedImportMetadata=true,metadataRestore=true,maxArtworkBytes=MetadataArtwork.MaximumBytes,artworkRoles=new[]{"primary","backdrop"}};});
     [HttpGet("Targets")]
     public Task<ActionResult> GetTargets()=>Safe(async()=>{await RequireUser();return Targets().Select(t=>new {id=t.Id,name=t.Name,kind=t.Kind}).ToArray();});
     [HttpGet("AdminInfo")]

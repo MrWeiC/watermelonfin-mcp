@@ -38,9 +38,22 @@ public sealed class MetadataDocument
             if (!keys.Add(key) || value == null || !Regex.IsMatch(value,key.ToLowerInvariant() switch { "imdb" => "^tt[0-9]{4,12}$", "tmdb" or "tvdb" => "^[1-9][0-9]{0,11}$", _ => "(?!)" })) throw new UploadException("Invalid metadata provider identifier");
         }
     }
-    public byte[] Nfo()
+    public byte[] Nfo(byte[]? original = null)
     {
-        Validate(); var movie=new XElement("movie",new XElement("title",Title),new XElement("lockdata","true"));
+        Validate(); var movie=new XElement("movie");
+        if(original!=null)
+        {
+            try
+            {
+                using var stream=new MemoryStream(original);
+                using var reader=XmlReader.Create(stream,new XmlReaderSettings{DtdProcessing=DtdProcessing.Prohibit,XmlResolver=null,MaxCharactersInDocument=65536});
+                movie=XDocument.Load(reader).Root??throw new XmlException();
+                if(movie.Name!="movie")throw new XmlException();
+            }catch(XmlException){throw new UploadException("Existing NFO could not be safely merged");}
+            var replaced=new HashSet<string>(StringComparer.OrdinalIgnoreCase){"title","name","localtitle","originaltitle","sortname","sorttitle","plot","review","biography","year","premiered","studio","genre","imdbid","tmdbid","tvdbid","lockdata","lockedfields"};
+            foreach(var node in movie.Elements().Where(e=>replaced.Contains(e.Name.LocalName)||(e.Name.LocalName=="uniqueid"&&new[]{"imdb","tmdb","tvdb"}.Contains(((string?)e.Attribute("type"))?.ToLowerInvariant()))).ToArray())node.Remove();
+        }
+        movie.Add(new XElement("title",Title),new XElement("lockdata","true"));
         void Add(string name,object? value) { if (value != null) movie.Add(new XElement(name,value)); }
         Add("originaltitle",OriginalTitle); Add("sorttitle",SortTitle); Add("plot",Overview); Add("year",ProductionYear); Add("premiered",PremiereDate);
         foreach(var studio in Studios) Add("studio",studio);
@@ -50,7 +63,7 @@ public sealed class MetadataDocument
     }
 }
 
-public sealed record MetadataSnapshot(MetadataDocument Document, bool IsLocked, string[] LockedFields);
+public sealed record MetadataSnapshot(MetadataDocument Document, bool IsLocked, string[] LockedFields, Dictionary<string,string?>? ArtworkPaths = null);
 public sealed record ImportMetadataState(string Revision, MetadataSnapshot? Metadata, Dictionary<string,byte[]?> Files, bool Pending = false);
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
@@ -64,4 +77,9 @@ public sealed class MetadataRestoreRequest
 {
     public string ExpectedRevision { get; set; } = "";
     public string Revision { get; set; } = "";
+}
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed class MetadataRefreshRequest
+{
+    public string ExpectedRevision { get; set; } = "";
 }

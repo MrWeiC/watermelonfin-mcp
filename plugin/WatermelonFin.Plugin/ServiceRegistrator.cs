@@ -13,5 +13,7 @@ public sealed class ServiceRegistrator : IPluginServiceRegistrator
     {
         services.AddSingleton<Func<Configuration.PluginConfiguration>>(_ => () => Plugin.Instance?.Configuration ?? new());
         services.AddSingleton(provider => new UploadStore(Path.Combine(provider.GetRequiredService<IApplicationPaths>().ProgramDataPath,"watermelonfin-imports")));
+        services.AddSingleton<ImportMetadataStore>();
+        services.AddSingleton<JellyfinImportMetadata>();
     }
 }

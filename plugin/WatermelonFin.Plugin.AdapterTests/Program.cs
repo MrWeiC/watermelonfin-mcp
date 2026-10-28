@@ -53,7 +53,7 @@ await Test("request casing matches MCP under Jellyfin JSON defaults",()=>{
  var request=JsonSerializer.Deserialize<UploadRequest>("{\"targetId\":\"movies\",\"fileName\":\"Example (2024).mp4\",\"size\":3,\"sha256\":\"abc\"}",Jellyfin.Extensions.Json.JsonDefaults.Options);
  Check(request?.TargetId=="movies" && request.Size==3);return Task.CompletedTask;
 });
-Console.WriteLine($"RESULT: {6-failures}/6 passed");return failures==0?0:1;
+Console.WriteLine($"RESULT: {6-failures}/6 passed");failures+=await MetadataAdapterTests.Run();return failures==0?0:1;
 
 public class PathsProxy:DispatchProxy {public string Path="";protected override object? Invoke(MethodInfo? method,object?[]? args)=>method?.ReturnType==typeof(string)?Path:null;}
 public sealed class FakeAuth:IAuthorizationContext

@@ -62,6 +62,15 @@ internal static class MetadataTests
    var f=await Fixture();var state=await f.metadata.Apply(f.owner,f.job,"initial",Document());var current=Path.Combine(f.uploads.Root,"Staging",f.job.ToString("N"),"metadata-current.json");var json=JsonNode.Parse(await File.ReadAllTextAsync(current))!;json["pending"]=true;await File.WriteAllTextAsync(current,json.ToJsonString());await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(f.video)!,"movie.nfo"),"partial");
    var recovered=await new ImportMetadataStore(f.uploads).Inspect(f.owner,f.job);Check(!recovered.Pending);Check(recovered.Revision==state.Revision);Check(XDocument.Load(Path.Combine(Path.GetDirectoryName(f.video)!,"movie.nfo")).Root!.Element("title")!.Value=="NOAH");
   });
-  Console.WriteLine($"METADATA RESULT: {9-failures}/9 passed");return failures;
+  await Test("repairs preserve unrelated NFO fields and refuse DTD input",async()=>{
+   var f=await Fixture();var path=Path.Combine(Path.GetDirectoryName(f.video)!,"movie.nfo");await File.WriteAllTextAsync(path,"<movie><title>Old</title><actor><name>Original actor</name></actor><custom>keep</custom><uniqueid type=\"custom\">original-id</uniqueid></movie>");
+   await f.metadata.Apply(f.owner,f.job,"initial",Document());var doc=XDocument.Load(path);Check(doc.Root!.Element("actor")!.Element("name")!.Value=="Original actor");Check(doc.Root.Element("custom")!.Value=="keep");Check(doc.Root.Elements("uniqueid").Single().Value=="original-id");
+   var g=await Fixture();await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(g.video)!,"movie.nfo"),"<!DOCTYPE movie [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><movie><title>&xxe;</title></movie>");await Deny(()=>g.metadata.Apply(g.owner,g.job,"initial",Document()));
+  });
+  await Test("merged NFO size is checked before committing any revision",async()=>{
+   var f=await Fixture();var path=Path.Combine(Path.GetDirectoryName(f.video)!,"movie.nfo");var original="<movie><custom>"+new string('x',60000)+"</custom></movie>";await File.WriteAllTextAsync(path,original);var doc=Document();doc.Overview=new string('y',10000);
+   await Deny(()=>f.metadata.Apply(f.owner,f.job,"initial",doc));Check(await File.ReadAllTextAsync(path)==original);Check((await f.metadata.Inspect(f.owner,f.job)).Revision=="initial");
+  });
+  Console.WriteLine($"METADATA RESULT: {11-failures}/11 passed");return failures;
  }
 }
