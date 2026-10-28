@@ -76,4 +76,10 @@ await Test("legacy manifests keep their original UUID publication path", async (
  Check(result.RelativePath==$"Imported/movies/{job.Id:N}/Example (2024)/Example (2024).mp4");
  Check((await new UploadStore(root).Status(owner,job.Id)).Status=="completed");
 });
-Console.WriteLine($"RESULT: {12-failures}/12 passed"); return failures == 0 ? 0 : 1;
+await Test("completed ownership resolution refuses a foreign owner", async () => {
+ var store=new UploadStore(Temp());var job=await store.Create(owner,Request(),"movies");await store.Append(owner,job.Id,0,bytes);await store.Finalize(owner,job.Id);
+ var resolve=typeof(UploadStore).GetMethod("ResolveCompleted");Check(resolve!=null);
+ try{await (Task)resolve!.Invoke(store,[other,job.Id])!;}catch(UploadException){return;}
+ throw new Exception("Foreign user obtained completed import");
+});
+Console.WriteLine($"RESULT: {13-failures}/13 passed"); failures += await MetadataTests.Run(); return failures == 0 ? 0 : 1;

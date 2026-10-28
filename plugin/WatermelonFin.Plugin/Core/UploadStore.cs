@@ -93,6 +93,17 @@ public sealed class UploadStore
     {
         await _gate.WaitAsync(); try { return await View(await Load(owner,id)); } finally { _gate.Release(); }
     }
+    public async Task<CompletedImport> ResolveCompleted(Guid owner, Guid id)
+    {
+        await _gate.WaitAsync(); try
+        {
+            var manifest = await Load(owner, id);
+            if ((await View(manifest)).Status != "completed") throw new UploadException("Metadata requires a completed upload", 409);
+            var destination = Destination(manifest, false);
+            _paths.ExistingFile(Path.GetDirectoryName(destination)!, Path.GetFileName(destination));
+            return new(id, owner, manifest.TargetId, destination, JobDir(id));
+        } finally { _gate.Release(); }
+    }
     public async Task<JobView> Append(Guid owner, Guid id, long offset, byte[] bytes)
     {
         await _gate.WaitAsync(); try
