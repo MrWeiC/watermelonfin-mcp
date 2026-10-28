@@ -36,7 +36,7 @@ public sealed record JobView(
 internal sealed record UploadManifest(Guid Id, Guid OwnerId, string TargetId, string Kind, string FileName, string RelativePath, long Size, string Sha256, DateTimeOffset ExpiresAt, int LayoutVersion = 0);
 
 public sealed record AccessFacts(bool Enabled, bool AuthenticatedUser, bool ApiKey, bool Administrator, bool DeletionAllowed, bool Allowlisted);
-public sealed record CompletedImport(Guid Id, Guid OwnerId, string TargetId, string VideoPath, string JournalDirectory);
+public sealed record CompletedImport(Guid Id, Guid OwnerId, string TargetId, string VideoPath, string JournalDirectory, string Kind = "other");
 public static class UploadAccess
 {
     public static void Require(AccessFacts facts)

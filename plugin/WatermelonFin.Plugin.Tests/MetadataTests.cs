@@ -71,6 +71,11 @@ internal static class MetadataTests
    var f=await Fixture();var path=Path.Combine(Path.GetDirectoryName(f.video)!,"movie.nfo");var original="<movie><custom>"+new string('x',60000)+"</custom></movie>";await File.WriteAllTextAsync(path,original);var doc=Document();doc.Overview=new string('y',10000);
    await Deny(()=>f.metadata.Apply(f.owner,f.job,"initial",doc));Check(await File.ReadAllTextAsync(path)==original);Check((await f.metadata.Inspect(f.owner,f.job)).Revision=="initial");
   });
-  Console.WriteLine($"METADATA RESULT: {11-failures}/11 passed");return failures;
+  await Test("episode repair uses episode NFO and thumb names without editing series folders",async()=>{
+   var f=await Fixture();var bytes="episode"u8.ToArray();var job=await f.uploads.Create(f.owner,new(){TargetId="shows",FileName="Example S01E03.mp4",Size=bytes.Length,Sha256=Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant()},"tv");await f.uploads.Append(f.owner,job.Id,0,bytes);await f.uploads.Finalize(f.owner,job.Id);var video=(await f.uploads.ResolveCompleted(f.owner,job.Id)).VideoPath;var parent=Path.GetDirectoryName(video)!;
+   var first=await f.metadata.Apply(f.owner,job.Id,"initial",new(){Title="The episode"});var nfo=Path.Combine(parent,"Example - S01E03.nfo");Check(File.Exists(nfo));Check(XDocument.Load(nfo).Root!.Name=="episodedetails");Check(!File.Exists(Path.Combine(parent,"movie.nfo")));
+   await f.metadata.SetArtwork(f.owner,job.Id,first.Revision,"primary",png);Check(File.Exists(Path.Combine(parent,"Example - S01E03-thumb.png")));Check((await File.ReadAllBytesAsync(video)).SequenceEqual(bytes));
+  });
+  Console.WriteLine($"METADATA RESULT: {12-failures}/12 passed");return failures;
  }
 }

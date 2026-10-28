@@ -91,7 +91,16 @@ internal static class MetadataAdapterTests
    {try{JsonSerializer.Deserialize<MetadataUpdateRequest>(text,Jellyfin.Extensions.Json.JsonDefaults.Options);throw new Exception("Unknown field accepted");}catch(JsonException){}}
    return Task.CompletedTask;
   });
-  Console.WriteLine($"METADATA ADAPTER RESULT: {8-failures}/8 passed");return failures;
+  await Test("actual Jellyfin JSON defaults accept and emit MCP metadata casing",()=>{
+   var request=JsonSerializer.Deserialize<MetadataUpdateRequest>("{\"expectedRevision\":\"initial\",\"metadata\":{\"title\":\"NOAH\",\"studios\":[\"Sight & Sound Theatres\"],\"genres\":[\"Faith\"]}}",Jellyfin.Extensions.Json.JsonDefaults.Options);
+   Check(request?.ExpectedRevision=="initial"&&request.Metadata.Title=="NOAH"&&request.Metadata.Studios.Single()=="Sight & Sound Theatres");
+   using var json=JsonDocument.Parse(JsonSerializer.Serialize(Doc(),Jellyfin.Extensions.Json.JsonDefaults.Options));Check(json.RootElement.GetProperty("title").GetString()=="NOAH");return Task.CompletedTask;
+  });
+  await Test("a long folder-derived original title can be repaired and restored",async()=>{
+   var f=await Make();var original=new string('N',180)+" [2989b984d06a4870967a7aa8d65a04f6]";f.Movie.Name=original;var changed=Data(await f.Controller.Update(f.Job,new(){ExpectedRevision="initial",Metadata=Doc()}));Check(f.Movie.Name=="NOAH");
+   var restored=Data(await f.Controller.Restore(f.Job,new(){ExpectedRevision=changed.GetProperty("revision").GetString()!,Revision="initial"}));Check(f.Movie.Name==original);Check(restored.GetProperty("verified").GetBoolean());
+  });
+  Console.WriteLine($"METADATA ADAPTER RESULT: {10-failures}/10 passed");return failures;
  }
  private sealed class Fixture
  {

@@ -53,7 +53,8 @@ export class Jellyfin {
  }
  async pluginRequest(route,method='GET',body){
   const uuid='[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}';
-  const rules={GET:new RegExp(`^(Capabilities|Targets|Jobs/${uuid})$`),POST:new RegExp(`^(Jobs|Jobs/${uuid}/Finalize)$`),PATCH:new RegExp(`^Jobs/${uuid}\\?offset=[0-9]+$`)};
+  const revision=`(initial|${uuid})`;
+  const rules={GET:new RegExp(`^(Capabilities|Targets|Jobs/${uuid}(/Metadata)?)$`),POST:new RegExp(`^(Jobs|Jobs/${uuid}/Finalize|Jobs/${uuid}/Metadata(/(Restore|Refresh))?|Jobs/${uuid}/Artwork/(primary|backdrop)\\?expectedRevision=${revision})$`),PATCH:new RegExp(`^Jobs/${uuid}\\?offset=[0-9]+$`)};
   if(!rules[method]?.test(route))throw new Error('Native upload operation not allowed');
   await this.identity();
   let response;try{response=await fetch(new URL(`WatermelonFin/Upload/${route}`,this.url),{method,redirect:'manual',signal:AbortSignal.timeout(60000),headers:{Authorization:authorization(this.options.token),...(body!==undefined?{'Content-Type':Buffer.isBuffer(body)?'application/octet-stream':'application/json'}:{})},...(body!==undefined?{body}:{} )});}catch{throw new Error('Jellyfin upload plugin unreachable or TLS verification failed');}

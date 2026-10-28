@@ -101,7 +101,7 @@ public sealed class UploadStore
             if ((await View(manifest)).Status != "completed") throw new UploadException("Metadata requires a completed upload", 409);
             var destination = Destination(manifest, false);
             _paths.ExistingFile(Path.GetDirectoryName(destination)!, Path.GetFileName(destination));
-            return new(id, owner, manifest.TargetId, destination, JobDir(id));
+            return new(id, owner, manifest.TargetId, destination, JobDir(id), manifest.Kind);
         } finally { _gate.Release(); }
     }
     public async Task<JobView> Append(Guid owner, Guid id, long offset, byte[] bytes)

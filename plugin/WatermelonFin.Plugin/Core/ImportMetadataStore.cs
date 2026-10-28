@@ -41,7 +41,7 @@ public sealed class ImportMetadataStore(UploadStore uploads)
     {
         Revision(state.Revision);
         if(state.Files==null || state.Files.Count!=Names.Length || Names.Any(n=>!state.Files.ContainsKey(n)) || state.Files.Any(f=>f.Value?.Length>Limit(f.Key)))throw new UploadException("Invalid metadata revision content");
-        if(state.Metadata!=null){state.Metadata.Document.Validate();if(state.Metadata.LockedFields==null || state.Metadata.LockedFields.Length>100 || state.Metadata.LockedFields.Any(s=>s.Length>100))throw new UploadException("Invalid metadata lock snapshot");
+        if(state.Metadata!=null){state.Metadata.Document.Validate(256);if(state.Metadata.LockedFields==null || state.Metadata.LockedFields.Length>100 || state.Metadata.LockedFields.Any(s=>s.Length>100))throw new UploadException("Invalid metadata lock snapshot");
             if(state.Metadata.ArtworkPaths is { } paths && (paths.Count>2 || paths.Any(p=>p.Key is not ("primary" or "backdrop") || p.Value?.Length>4096)))throw new UploadException("Invalid artwork snapshot");}
     }
     private static async Task<ImportMetadataState> ReadState(CompletedImport import,string name)
@@ -52,7 +52,7 @@ public sealed class ImportMetadataStore(UploadStore uploads)
     }
     private static async Task Materialize(CompletedImport import,ImportMetadataState state)
     {
-        foreach(var name in Names)await WriteFixed(Path.GetDirectoryName(import.VideoPath)!,name,state.Files[name]);
+        foreach(var name in Names)await WriteFixed(Path.GetDirectoryName(import.VideoPath)!,MetadataFiles.Name(import,name),state.Files[name]);
     }
     private static async Task<ImportMetadataState> Current(CompletedImport import,MetadataSnapshot? baseline)
     {
@@ -62,7 +62,7 @@ public sealed class ImportMetadataStore(UploadStore uploads)
             if(state.Pending){await Materialize(import,state);state=state with{Pending=false};await SaveState(import,"metadata-current.json",state);}
             return state;
         }
-        var files=new Dictionary<string,byte[]?>();foreach(var name in Names)files[name]=await ReadFixed(Path.GetDirectoryName(import.VideoPath)!,name,Limit(name));
+        var files=new Dictionary<string,byte[]?>();foreach(var name in Names)files[name]=await ReadFixed(Path.GetDirectoryName(import.VideoPath)!,MetadataFiles.Name(import,name),Limit(name));
         return new("initial",baseline,files);
     }
     private static void Expected(ImportMetadataState state,string expected)
@@ -82,7 +82,7 @@ public sealed class ImportMetadataStore(UploadStore uploads)
     public Task<ImportMetadataState> Apply(Guid owner,Guid job,string expected,MetadataDocument document,MetadataSnapshot? baseline=null)
         =>WithImport(owner,job,async import=>{
             document.Validate();var before=await Current(import,baseline);Expected(before,expected);
-            var files=new Dictionary<string,byte[]?>(before.Files){["movie.nfo"]=document.Nfo(before.Files["movie.nfo"])};
+            var files=new Dictionary<string,byte[]?>(before.Files){["movie.nfo"]=document.Nfo(before.Files["movie.nfo"],import.Kind=="tv"?"episodedetails":"movie")};
             return await Commit(import,before,new("",new(document,true,[],before.Metadata?.ArtworkPaths),files));
         });
     public Task<ImportMetadataState> SetArtwork(Guid owner,Guid job,string expected,string role,byte[] bytes,MetadataSnapshot? baseline=null)
