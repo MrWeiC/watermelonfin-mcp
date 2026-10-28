@@ -33,7 +33,7 @@ public sealed record JobView(
     [property: JsonPropertyName("targetId")] string? TargetId = null,
     [property: JsonPropertyName("indexedInJellyfin")] bool IndexedInJellyfin = false);
 
-internal sealed record UploadManifest(Guid Id, Guid OwnerId, string TargetId, string Kind, string FileName, string RelativePath, long Size, string Sha256, DateTimeOffset ExpiresAt);
+internal sealed record UploadManifest(Guid Id, Guid OwnerId, string TargetId, string Kind, string FileName, string RelativePath, long Size, string Sha256, DateTimeOffset ExpiresAt, int LayoutVersion = 0);
 
 public sealed record AccessFacts(bool Enabled, bool AuthenticatedUser, bool ApiKey, bool Administrator, bool DeletionAllowed, bool Allowlisted);
 public static class UploadAccess

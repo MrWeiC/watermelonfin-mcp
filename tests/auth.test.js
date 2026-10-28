@@ -9,8 +9,8 @@ test('username/password logs in without prior browser session or token',async()=
  try{
  const client=new Jellyfin('https://media.tail.ts.net',{serverId:'s',username:'person',password:'PRIVATE_PASSWORD'});
  assert.deepEqual(await client.libraries(),[]);assert.deepEqual(await client.libraries(),[]);
- const login=f.calls.filter(c=>c.path==='/Users/AuthenticateByName');assert.equal(login.length,1);assert.equal(login[0].method,'POST');assert.equal(login[0].redirect,'manual');assert.deepEqual(JSON.parse(login[0].body),{Username:'person',Pw:'PRIVATE_PASSWORD'});assert.ok(login[0].headers['X-Emby-Authorization'].includes('WatermelonFin MCP'));
- assert.ok(f.calls.filter(c=>c.path==='/Users/Me').every(c=>c.headers['X-Emby-Token']==='PRIVATE_TOKEN'));
+ const login=f.calls.filter(c=>c.path==='/Users/AuthenticateByName');assert.equal(login.length,1);assert.equal(login[0].method,'POST');assert.equal(login[0].redirect,'manual');assert.deepEqual(JSON.parse(login[0].body),{Username:'person',Pw:'PRIVATE_PASSWORD'});assert.ok(login[0].headers.Authorization.includes('WatermelonFin MCP'));
+ assert.ok(f.calls.filter(c=>c.path==='/Users/Me').every(c=>c.headers.Authorization?.includes('Token="PRIVATE_TOKEN"')));
  }finally{f.close();}
 });
 test('password is never transmitted without transport trust or matching server ID',async()=>{
@@ -33,4 +33,12 @@ test('explicit retry recovers from transient login failure without automatic ret
  await assert.rejects(()=>c.identity());assert.equal(attempts,1);
  assert.equal(await c.identity(),'u');assert.equal(attempts,2);assert.deepEqual(tokens,['NEW_SESSION_TOKEN']);
  }finally{f.close();}
+});
+
+test('modern Authorization required on login, library reads and native uploads',async()=>{
+ const f=fixture(c=>{
+  if(c.path!=='/System/Info/Public' && (!c.headers.Authorization?.startsWith('MediaBrowser ') || Object.keys(c.headers).some(k=>/^x-emby-/i.test(k))))return new Response('',{status:400});
+  return new Response(JSON.stringify(c.path==='/System/Info/Public'?info:c.path==='/Users/AuthenticateByName'?{AccessToken:'PRIVATE_TOKEN'}:c.path==='/Users/Me'?user:c.path.endsWith('/Capabilities')?{enabled:true}:{Items:[]}));
+ });
+ try{const c=new Jellyfin('https://media',{serverId:'s',username:'u',password:'secret'});assert.deepEqual(await c.libraries(),[]);assert.deepEqual(await c.pluginRequest('Capabilities'),{enabled:true});}finally{f.close();}
 });

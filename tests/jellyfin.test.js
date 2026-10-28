@@ -6,8 +6,8 @@ async function fixture(fn) {
  const calls=[]; const original=globalThis.fetch;
  globalThis.fetch=async (url,options)=>{
   assert.equal(options.redirect,'manual');
-  const req={url:new URL(url).pathname,method:options.method,headers:{'x-emby-token':options.headers['X-Emby-Token']}};
-  calls.push({url:req.url,method:req.method,token:req.headers['x-emby-token']});
+  const req={url:new URL(url).pathname,method:options.method,headers:{'authorization':options.headers.Authorization}};
+  calls.push({url:req.url,method:req.method,token:req.headers.authorization});
   let status=200,headers={},body='';
   const res={set statusCode(v){status=v;},writeHead(v,h){status=v;headers=h;},end(v=''){body=v;}};
   fn(req,res);return new Response(body,{status,headers});

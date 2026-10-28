@@ -57,7 +57,7 @@ npm ci --ignore-scripts
 
 Use `DOTNET_BINARY=/absolute/path/to/dotnet` if the SDK is not on PATH. Validation runs locally; no GitHub Actions workflow is used.
 
-The output is `artifacts/WatermelonFin.Upload-0.1.1.0.zip`, containing the plugin assembly and license/notices. A source archive is not an installable plugin package.
+The output is `artifacts/WatermelonFin.Upload-0.1.2.0.zip`, containing the plugin assembly and license/notices. A source archive is not an installable plugin package.
 
 To generate a catalog entry, supply the actual server-accessible HTTPS URL of the corresponding published ZIP:
 
@@ -82,3 +82,7 @@ All routes are beneath the existing Jellyfin base path and require Jellyfin auth
 | GET | `WatermelonFin/Upload/AdminInfo` | Administrator-only path guidance |
 
 The plugin provides a receiving API and a configuration page. A graphical drag-and-drop uploader and Apple client upload/pairing UI are not part of this preview.
+
+### 0.1.2 compatibility fixes
+
+MCP uses the standard `Authorization: MediaBrowser ...` header for login, reads and native uploads. New uploads use a readable top-level folder such as `Lesson One [unique-id]/Lesson One.mp4` instead of a UUID-only folder. Movies and TV retain their planned filenames and season paths inside a readable unique folder. The identifier remains visible where Jellyfin derives titles from folders; exact title rendering depends on library metadata settings. Existing jobs retain the old layout and are never moved or renamed.

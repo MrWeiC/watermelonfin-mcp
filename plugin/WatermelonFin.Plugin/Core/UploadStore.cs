@@ -33,14 +33,18 @@ public sealed class UploadStore
         if (new FileInfo(path).Length > 16384) throw new UploadException("Invalid upload manifest");
         var m = JsonSerializer.Deserialize<UploadManifest>(await File.ReadAllTextAsync(path), Json) ?? throw new UploadException("Invalid upload manifest");
         if (m.OwnerId != owner) throw new UploadException("Upload job belongs to another user", 403);
-        if (m.Id != id || m.Size < 1 || m.Size > MaximumFileBytes || !Regex.IsMatch(m.Sha256, "^[a-f0-9]{64}$")
+        if (m.LayoutVersion is < 0 or > 1 || m.Id != id || m.Size < 1 || m.Size > MaximumFileBytes || !Regex.IsMatch(m.Sha256, "^[a-f0-9]{64}$")
             || ImportPlan.Target(m.TargetId) != m.TargetId || ImportPlan.Create(m.FileName,m.Kind).RelativePath != m.RelativePath)
             throw new UploadException("Invalid upload manifest");
         return m;
     }
     private string Destination(UploadManifest m, bool create)
     {
-        var dirs = new[] { "Imported", m.TargetId, m.Id.ToString("N") }.Concat(m.RelativePath.Split('/').SkipLast(1)).ToArray();
+        var parts = m.RelativePath.Split('/');
+        // Version 0 retains the published paths from older installations.
+        var dirs = m.LayoutVersion == 0
+            ? new[] { "Imported", m.TargetId, m.Id.ToString("N") }.Concat(parts.SkipLast(1)).ToArray()
+            : new[] { "Imported", m.TargetId, $"{(parts.Length > 1 ? parts[0] : Path.GetFileNameWithoutExtension(m.FileName))} [{m.Id:N}]" }.Concat(parts.Skip(1).SkipLast(1)).ToArray();
         var parent = create ? _paths.Directory(dirs) : Path.Combine(new[] { Root }.Concat(dirs).ToArray());
         if (!create && Directory.Exists(parent)) _paths.Directory(dirs);
         return Path.Combine(parent, m.RelativePath.Split('/').Last());
@@ -77,7 +81,7 @@ public sealed class UploadStore
             }
             if(active>=_maxActiveJobs)throw new UploadException("Active upload quota exceeded",409);
             if(_availableSpace(Root) < request.Size+reserved+64*1024*1024)throw new UploadException("Insufficient disk space",409);
-            var job=new UploadManifest(Guid.NewGuid(),owner,target,kind,request.FileName,plan.RelativePath,request.Size,request.Sha256,DateTimeOffset.UtcNow.AddHours(24));
+            var job=new UploadManifest(Guid.NewGuid(),owner,target,kind,request.FileName,plan.RelativePath,request.Size,request.Sha256,DateTimeOffset.UtcNow.AddHours(24),1);
             var directory=JobDir(job.Id);
             await using(var body=new FileStream(Path.Combine(directory,"body"),FileMode.CreateNew,FileAccess.Write,FileShare.None)) { await body.FlushAsync(); }
             await using(var meta=new FileStream(Path.Combine(directory,"job.pending"),FileMode.CreateNew,FileAccess.Write,FileShare.None)){await JsonSerializer.SerializeAsync(meta,job,Json);meta.Flush(flushToDisk:true);}

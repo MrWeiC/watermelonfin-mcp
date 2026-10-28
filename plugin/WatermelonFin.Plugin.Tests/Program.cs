@@ -47,7 +47,7 @@ await Test("symlink target rejected before outside directory creation", async ()
 });
 await Test("preexisting same-size destination is a conflict, never a successful upload", async () => {
  var root=Temp();var store=new UploadStore(root);var job=await store.Create(owner,Request(),"movies");await store.Append(owner,job.Id,0,bytes);
- var parent=Path.Combine(root,"Imported","movies",job.Id.ToString("N"),"Example (2024)");Directory.CreateDirectory(parent);var dest=Path.Combine(parent,"Example (2024).mp4");await File.WriteAllBytesAsync(dest,new byte[bytes.Length]);
+ var parent=Path.Combine(root,"Imported","movies","Example (2024) ["+job.Id.ToString("N")+"]");Directory.CreateDirectory(parent);var dest=Path.Combine(parent,"Example (2024).mp4");await File.WriteAllBytesAsync(dest,new byte[bytes.Length]);
  await Deny(()=>store.Finalize(owner,job.Id));Check((await File.ReadAllBytesAsync(dest)).All(b=>b==0));
 });
 await Test("access denied unless enabled, restricted and allowlisted", async () => {
@@ -64,4 +64,16 @@ await Test("free space probe uses actual import directory, not filesystem root",
  await Deny(()=>store.Create(owner,Request(),"movies"));Check(probed==root);
  if(!OperatingSystem.IsWindows())Check(new DriveInfo(root).Name==root);
 });
-Console.WriteLine($"RESULT: {10-failures}/10 passed"); return failures == 0 ? 0 : 1;
+await Test("new other uploads have readable unique top-level folders", async () => {
+ var root=Temp();var store=new UploadStore(root);var job=await store.Create(owner,Request("Lesson One.mp4"),"other");await store.Append(owner,job.Id,0,bytes);
+ var result=await store.Finalize(owner,job.Id);var parts=result.RelativePath!.Split('/');Check(parts[2].StartsWith("Lesson One ["));Check(parts[3]=="Lesson One.mp4");
+});
+await Test("legacy manifests keep their original UUID publication path", async () => {
+ var root=Temp();var store=new UploadStore(root);var job=await store.Create(owner,Request(),"movies");
+ var metadata=Path.Combine(root,"Staging",job.Id.ToString("N"),"job.json");
+ var json=System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(metadata))!;json.AsObject().Remove("layoutVersion");await File.WriteAllTextAsync(metadata,json.ToJsonString());
+ await store.Append(owner,job.Id,0,bytes);var result=await store.Finalize(owner,job.Id);
+ Check(result.RelativePath==$"Imported/movies/{job.Id:N}/Example (2024)/Example (2024).mp4");
+ Check((await new UploadStore(root).Status(owner,job.Id)).Status=="completed");
+});
+Console.WriteLine($"RESULT: {12-failures}/12 passed"); return failures == 0 ? 0 : 1;

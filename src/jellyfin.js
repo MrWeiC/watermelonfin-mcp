@@ -13,9 +13,13 @@ export function baseURL(value) {
  u.pathname=u.pathname.replace(/\/$/,'')+'/';
  return u;
 }
+function authorization(token) {
+ const fields = {Client:'WatermelonFin MCP',Device:'Local Agent',DeviceId:deviceId,Version:'0.1.2',...(token?{Token:token}:{})};
+ return 'MediaBrowser '+Object.entries(fields).map(([key,value])=>`${key}=${JSON.stringify(value)}`).join(', ');
+}
 async function readJSON(url,token,login) {
  let r;
- try{r=await fetch(url,{method:'GET',redirect:'manual',signal:AbortSignal.timeout(3500),headers:login?{'Content-Type':'application/json','X-Emby-Authorization':`MediaBrowser Client="WatermelonFin MCP", Device="Local Agent", DeviceId="${deviceId}", Version="0.1.1"`}:token?{'X-Emby-Token':token}:{} ,...(login?{method:'POST',body:JSON.stringify(login)}:{})});}catch{throw new Error('Server unreachable or TLS verification failed');}
+ try{r=await fetch(url,{method:'GET',redirect:'manual',signal:AbortSignal.timeout(3500),headers:{...(login?{'Content-Type':'application/json'}:{}),...((login||token)?{Authorization:authorization(token)}:{})} ,...(login?{method:'POST',body:JSON.stringify(login)}:{})});}catch{throw new Error('Server unreachable or TLS verification failed');}
  return parseResponse(r);
 }
 async function parseResponse(r){
@@ -52,7 +56,7 @@ export class Jellyfin {
   const rules={GET:new RegExp(`^(Capabilities|Targets|Jobs/${uuid})$`),POST:new RegExp(`^(Jobs|Jobs/${uuid}/Finalize)$`),PATCH:new RegExp(`^Jobs/${uuid}\\?offset=[0-9]+$`)};
   if(!rules[method]?.test(route))throw new Error('Native upload operation not allowed');
   await this.identity();
-  let response;try{response=await fetch(new URL(`WatermelonFin/Upload/${route}`,this.url),{method,redirect:'manual',signal:AbortSignal.timeout(60000),headers:{'X-Emby-Token':this.options.token,...(body!==undefined?{'Content-Type':Buffer.isBuffer(body)?'application/octet-stream':'application/json'}:{})},...(body!==undefined?{body}:{} )});}catch{throw new Error('Jellyfin upload plugin unreachable or TLS verification failed');}
+  let response;try{response=await fetch(new URL(`WatermelonFin/Upload/${route}`,this.url),{method,redirect:'manual',signal:AbortSignal.timeout(60000),headers:{Authorization:authorization(this.options.token),...(body!==undefined?{'Content-Type':Buffer.isBuffer(body)?'application/octet-stream':'application/json'}:{})},...(body!==undefined?{body}:{} )});}catch{throw new Error('Jellyfin upload plugin unreachable or TLS verification failed');}
   return parseResponse(response);
  }
  async libraries(){

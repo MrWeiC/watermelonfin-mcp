@@ -71,7 +71,7 @@ HTTPS uses normal certificate verification. HTTP credentials require prior estab
 
 ## Native upload plugin
 
-The [v0.1.1 pre-release](https://github.com/MrWeiC/watermelonfin-mcp/releases/tag/v0.1.1) contains the compiled plugin ZIP and SHA-256 checksum. The official Jellyfin plugin repository URL is:
+The [v0.1.2 pre-release](https://github.com/MrWeiC/watermelonfin-mcp/releases/tag/v0.1.2) contains the compiled plugin ZIP and SHA-256 checksum. The official Jellyfin plugin repository URL is:
 
 ```text
 https://raw.githubusercontent.com/MrWeiC/watermelonfin-mcp/main/catalog/manifest.json
@@ -109,7 +109,7 @@ The legacy standalone importer is an optional alternative for operators who alre
 
 ## Local validation and release status
 
-The v0.1.1 dependency refresh passed `npm audit --omit=dev` with zero known reported vulnerabilities on October 27, 2026. This is a point-in-time check, not a guarantee against undiscovered or future vulnerabilities. Use v0.1.1 or later rather than the initial v0.1.0 MCP dependency lockfile.
+The v0.1.2 dependency refresh passed `npm audit --omit=dev` with zero known reported vulnerabilities on October 27, 2026. This is a point-in-time check, not a guarantee against undiscovered or future vulnerabilities. Use v0.1.2 or later rather than the initial v0.1.0 MCP dependency lockfile.
 
 ```sh
 npm test

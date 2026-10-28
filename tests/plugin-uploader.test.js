@@ -11,7 +11,7 @@ function fixture(handler){const original=globalThis.fetch,calls=[];globalThis.fe
 const client=()=>new Jellyfin('https://jellyfin.tail.ts.net',{token:'TOKEN_SECRET',serverId:'server'});
 test('plugin uses existing Jellyfin session and bounded native routes',async()=>{
  const f=fixture(c=>new Response(JSON.stringify(c.path.endsWith('Capabilities')?{protocol:'watermelonfin-upload.v1',delete:false,overwrite:false}:{id:'movies'})));
- try{await client().pluginRequest('Capabilities');const c=f.calls.at(-1);assert.equal(c.headers['X-Emby-Token'],'TOKEN_SECRET');assert.equal(c.redirect,'manual');await assert.rejects(()=>client().pluginRequest('http://evil.example','POST'));await assert.rejects(()=>client().pluginRequest('../Library/VirtualFolders','DELETE'));}finally{f.close();}
+ try{await client().pluginRequest('Capabilities');const c=f.calls.at(-1);assert.ok(c.headers.Authorization?.includes('Token="TOKEN_SECRET"'));assert.equal(c.redirect,'manual');await assert.rejects(()=>client().pluginRequest('http://evil.example','POST'));await assert.rejects(()=>client().pluginRequest('../Library/VirtualFolders','DELETE'));}finally{f.close();}
 });
 test('selected file streams direct to native plugin without returning credentials',async()=>{
  const root=await mkdtemp(join(tmpdir(),'wf-plugin-client-')),file=join(root,'Example (2024).mp4');await writeFile(file,'abc');let create;
