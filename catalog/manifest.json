@@ -3,10 +3,18 @@
     "category": "General",
     "guid": "cbe3ae89-5d55-4e89-bb49-cb09af9b9bfe",
     "name": "WatermelonFin Upload",
-    "description": "Additive uploads for WatermelonFin MCP; no delete or overwrite API.",
+    "description": "Additive uploads and owned-import metadata repair; no media deletion or video overwrite.",
     "owner": "MrWeiC",
-    "overview": "Restricted native media uploads",
+    "overview": "Restricted native media uploads and metadata repair",
+    "imageUrl": "https://github.com/MrWeiC/watermelonfin-mcp/releases/download/v0.1.3/watermelonfin-logo.png",
     "versions": [
+      {
+        "version": "0.1.3.0",
+        "targetAbi": "12.4.0.0",
+        "sourceUrl": "https://github.com/MrWeiC/watermelonfin-mcp/releases/download/v0.1.3/WatermelonFin.Upload-0.1.3.0.zip",
+        "checksum": "db6c55203927f58f9e9c0862a5f5ebc1",
+        "changelog": "Adds revisioned metadata/artwork repair limited to completed imports owned by the authenticated restricted user."
+      },
       {
         "version": "0.1.2.0",
         "targetAbi": "12.4.0.0",

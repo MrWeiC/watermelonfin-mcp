@@ -74,7 +74,7 @@ HTTPS uses normal certificate verification. HTTP credentials require prior estab
 
 ## Native upload plugin
 
-The [v0.1.2 pre-release](https://github.com/MrWeiC/watermelonfin-mcp/releases/tag/v0.1.2) contains the compiled plugin ZIP and SHA-256 checksum. The official Jellyfin plugin repository URL is:
+The [v0.1.3 pre-release](https://github.com/MrWeiC/watermelonfin-mcp/releases/tag/v0.1.3) contains the compiled plugin ZIP and SHA-256 checksum. The official Jellyfin plugin repository URL is:
 
 ```text
 https://raw.githubusercontent.com/MrWeiC/watermelonfin-mcp/main/catalog/manifest.json
@@ -82,7 +82,7 @@ https://raw.githubusercontent.com/MrWeiC/watermelonfin-mcp/main/catalog/manifest
 
 See [the plugin guide](docs/plugin.md) for installation, configuration, endpoint details, and deployment limits.
 
-Metadata repair requires the v0.1.3 MCP **and** native plugin. The published v0.1.2 package lacks it. See [owned-import metadata repair](docs/owned-import-metadata.md) for tools, revision/restore workflow, and upgrade verification. A local v0.1.3 build is not automatically published to the catalog.
+Metadata repair requires the v0.1.3 MCP **and** native plugin. The published v0.1.2 package lacks it. See [owned-import metadata repair](docs/owned-import-metadata.md) for tools, revision/restore workflow, and upgrade verification. The official catalog includes v0.1.3.0 and the WatermelonFin logo.
 
 1. Install the published plugin through Jellyfin's plugin repository/catalog and restart Jellyfin.
 2. Keep uploads disabled until the administrator selects the intended import targets and allowlists a restricted user.

@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.3 — local build, pending release/deployment validation
+## 0.1.3 — pre-release (2026-10-28)
 
 - Add five MCP tools for revisioned metadata/artwork inspection, repair, restore, and refresh of a restricted user's own completed video imports.
 - Resolve ownership from durable manifests; accept no arbitrary item IDs, server paths, administrator credentials, or remote artwork URLs.
