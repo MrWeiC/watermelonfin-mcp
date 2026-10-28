@@ -1,5 +1,7 @@
 # WatermelonFin MCP
 
+<img src="assets/logo.png" alt="WatermelonFin" width="96" />
+
 A local Model Context Protocol (MCP) server for discovering Jellyfin servers, querying media libraries, importing **new** media, and repairing metadata/artwork of **your own completed video imports** through a companion Jellyfin plugin.
 
 **Early preview.** The plugin targets Jellyfin 12.4.0. Uploads have been exercised on one actual server; the new v0.1.3 metadata repair path still requires deployment validation. Automated core, SDK adapter, HTTP, and MCP stdio tests do not establish loading/indexing compatibility on every host.

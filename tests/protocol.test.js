@@ -40,3 +40,7 @@ test('capability response refuses credential-bearing profile URLs',async()=>{
  const transport=new StdioClientTransport({command:process.execPath,args:[resolve('src/cli.js')],env:{PATH:process.env.PATH,WATERMELONFIN_PROFILES:JSON.stringify([{id:'bad',url:'https://user:do-not-echo@host',serverId:'s',tokenEnv:'TOKEN'}])},stderr:'pipe'});
  const client=new Client({name:'test',version:'1'});try{await client.connect(transport);const r=await client.callTool({name:'inspect_capabilities',arguments:{}});assert.equal(r.isError,true);assert.ok(!r.content[0].text.includes('do-not-echo'));}finally{await client.close();}
 });
+
+test('MCP initialization advertises the bundled WatermelonFin logo without a network dependency',async()=>withClient(async c=>{
+ const {readFile}=await import('node:fs/promises');const info=c.getServerVersion();assert.equal(info.title,'WatermelonFin');assert.equal(info.icons?.[0]?.mimeType,'image/png');assert.ok(info.icons[0].src.startsWith('data:image/png;base64,'));const bytes=Buffer.from(info.icons[0].src.split(',')[1],'base64');assert.deepEqual(bytes,await readFile('assets/logo.png'));
+}));

@@ -62,7 +62,7 @@ The v0.1.3 build outputs `artifacts/WatermelonFin.Upload-0.1.3.0.zip`, containin
 To generate a catalog entry, supply the actual server-accessible HTTPS URL of the corresponding published ZIP:
 
 ```sh
-python3 scripts/package-plugin.py --source-url ACTUAL_HTTPS_RELEASE_ASSET_URL
+python3 scripts/package-plugin.py --source-url ACTUAL_HTTPS_RELEASE_ASSET_URL --image-url ACTUAL_HTTPS_LOGO_URL
 ```
 
 The packaging script computes the catalog checksum from the ZIP and also emits SHA-256 metadata. Do not publish a catalog entry with an invented URL. Build, package, and upload all release assets before publishing an immutable release; do not replace assets in an existing version.
@@ -100,3 +100,9 @@ The new MCP and native plugin can repair and restore only the authenticated user
 | POST | `Metadata/Refresh` | Reapply and refresh/read back only the exact owned item |
 
 Writes preserve video bytes and publication paths. There is no general metadata editor for other media, no media deletion/overwrite, and no arbitrary filesystem or remote-artwork-fetch API.
+
+### Plugin branding
+
+The package includes the existing WatermelonFin mark as `logo.png` and a Jellyfin `meta.json` declaring `imagePath: logo.png`. External plugin images use that local manifest rather than the server-bundled-only embedded-image interface. The packager also emits `artifacts/watermelonfin-logo.png` for hosting with a release. Catalog generation requires explicit, real HTTPS URLs for both ZIP and logo; no unpublished logo URL is guessed.
+
+The MCP advertises the same bundled mark in `serverInfo.icons` using an inline PNG, so it requires no remote fetch. Whether a particular host renders protocol icons is a host UI capability.

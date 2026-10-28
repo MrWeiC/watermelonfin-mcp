@@ -9,6 +9,7 @@
 - Register artwork through Jellyfin and distinguish persisted changes from verified indexed presentation.
 - Advertise metadata capabilities; reject older native plugins before mutation.
 - Derive package/catalog versions from the native project.
+- Bundle the existing WatermelonFin logo for Jellyfin installed-plugin/catalog images and MCP protocol icons.
 
 ## 0.1.2
 

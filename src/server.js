@@ -1,6 +1,8 @@
 import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
 import {z} from 'zod';
 import {readFile} from 'node:fs/promises';
+import {readFileSync} from 'node:fs';
+const logoIcon={src:'data:image/png;base64,'+readFileSync(new URL('../assets/logo.png',import.meta.url)).toString('base64'),mimeType:'image/png',sizes:['236x272']};
 import {Jellyfin,discover,baseURL} from './jellyfin.js';
 import {inspectTailscale} from './tailscale.js';
 import {planImport} from './import-plan.js';
@@ -10,7 +12,7 @@ import {importJobId,metadataRevision,importMetadataDocument,artworkRole,artworkP
 
 export function createMcpServer(env=process.env){
  const clients=new Map();
- const server=new McpServer({name:'watermelonfin-mcp',version:'0.1.3'});
+ const server=new McpServer({name:'watermelonfin-mcp',title:'WatermelonFin',version:'0.1.3',websiteUrl:'https://github.com/MrWeiC/watermelonfin-mcp',icons:[logoIcon]});
  const secretValues=Object.entries(env).filter(([k])=>/TOKEN|SECRET|PASSWORD/i.test(k)).map(([,v])=>v).filter(v=>typeof v==='string'&&v.length>3);
  const scrub=value=>{let text=JSON.stringify(value);for(const secret of secretValues)text=text.split(secret).join('[redacted]');return text;};
  const register=(name,description,shape,fn,readOnly=true)=>server.registerTool(name,{description,inputSchema:z.object(shape).strict(),annotations:{readOnlyHint:readOnly,destructiveHint:false,openWorldHint:true}},async args=>{
