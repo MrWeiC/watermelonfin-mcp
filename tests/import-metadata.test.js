@@ -95,3 +95,8 @@ test('real MCP stdio round-trip repairs metadata through bounded authenticated H
   assert.equal(r.isError,undefined);assert.equal(JSON.parse(r.content[0].text).verified,true);assert.ok(updated&&authorized);assert.ok(!JSON.stringify(r).includes('TEST_SESSION_TOKEN'));assert.ok(!JSON.stringify(r).includes('LOCAL_FAKE_PASSWORD'));
  }finally{await c.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 });
+
+test('external changes are explicit unverified baselines requiring a fresh revision',async()=>{
+ let state=reply({verified:false,refreshStatus:'external-changes',indexedMetadata:{...document,title:'Administrator correction'},persistedMetadata:{...document,title:'Administrator correction'}});const f=fixture(c=>Response.json(c.path.endsWith('/Capabilities')?caps:state));
+ try{const result=await inspectImportMetadata(client(),job);assert.equal(result.refreshStatus,'external-changes');assert.equal(result.verified,false);state={...state,verified:true};await assert.rejects(()=>inspectImportMetadata(client(),job),/verification|inconsistent/i);}finally{f.close();}
+});

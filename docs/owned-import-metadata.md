@@ -20,6 +20,8 @@ This covers movies, `other` video targets such as Home School, and individual TV
 
 Use each returned revision as the next `expectedRevision`. Stale revisions are rejected; inspect again rather than silently retrying a write. `initial` identifies the original state and appears in history after the first change. Revision IDs are private to a job.
 
+Before a subsequent edit, the plugin compares current indexed fields and sidecar bytes with its observed revision. External changes cause a conflict rather than silent replacement. Inspection captures those external fields/files as a new private baseline revision, with `refreshStatus: external-changes` and `verified: false`, without changing media or its sidecars. Use that returned revision to retain the external correction in later edits. Prior revisions remain available for an explicit restore.
+
 ## Supported metadata
 
 `title` is required (1–200 characters). Optional fields are `originalTitle`, `sortTitle`, `overview`, `productionYear`, `premiereDate` (`YYYY-MM-DD`), `studios`, `genres`, and `providerIds` (`imdb`, `tmdb`, `tvdb`). A supplied premiere date and year must agree. Unknown fields are refused.
@@ -44,7 +46,7 @@ Verify description and artwork against the intended production. Runtime similari
 
 ## Artwork
 
-Roles are `primary` and `backdrop`. Use an explicitly selected local JPEG/PNG inside `WATERMELONFIN_UPLOAD_ROOTS`. Limits: 8 MiB, 8192 pixels per side, and 40 million pixels. The plugin checks structure/checksums where applicable and invokes Jellyfin's image decoder before publication. Existing local symlink/shared-write restrictions apply.
+Roles are `primary` and `backdrop`. Use an explicitly selected local JPEG/PNG inside `WATERMELONFIN_UPLOAD_ROOTS`. Limits: 8 MiB, 8192 pixels per side, and 40 million pixels. The plugin checks structure/checksums where applicable and requires successful full pixel decoding with the server-compatible Skia codec before publication. At most two artwork read/decode operations run concurrently. Existing local symlink/shared-write restrictions apply.
 
 Research/download artwork on the client, then supply its local path. Metadata tools accept no artwork URL and expose no arbitrary server-side fetch. Bytes stream directly; responses contain fields/registration flags, not image bytes or server paths.
 
@@ -54,9 +56,9 @@ Movie/other-video sidecars use `movie.nfo`, `poster.jpg`/`poster.png`, and `fana
 
 Before a change, original fields, locks, artwork registration, and supported sidecar bytes are saved in the private upload job directory. The per-job maximum is 100 historical revisions; reaching it refuses another change rather than deleting history. No public cleanup endpoint is added.
 
-A pending authoritative journal lets the next authorized inspection recover incomplete sidecar publication. Restoring applies a new revision and recreates original sidecar bytes, including originally absent files; it never deletes a video. Cached original artwork remains retained and is registered again. Manual removal/relocation of that original cached image can prevent safe restoration and must not be reported as success.
+A pending authoritative journal lets the next authorized inspection recover incomplete sidecar publication before checking current artwork registration. A dangling current registration cannot block replay. Restoring applies a new revision and recreates original sidecar bytes, including originally absent files; it never deletes a video. Cached original artwork remains retained and is registered again. Manual removal/relocation of that original cached image can prevent safe restoration and must not be reported as success.
 
-Responses distinguish `persistedMetadata` from `indexedMetadata`. `verified: true` requires matching fields, locks, and image registration after the exact item is refreshed. `refreshStatus: pending` means the change is journaled but synchronization did not finish; inspect or refresh using its current revision. `mismatch` means readback differs from the requested state. Successful upload or playback alone is not proof of correct catalog presentation.
+Responses distinguish `persistedMetadata` from `indexedMetadata`. `verified: true` requires matching fields, locks, sidecars, and image registration after successful persistence and exact-item refresh/readback. Synchronization status is durable across inspection and process restarts; a matching in-memory object alone never verifies a failed save or refresh. `refreshStatus: pending` means the change is journaled but synchronization did not finish; inspect, then refresh/restore using its current revision before another edit. `mismatch` means readback differs from the requested state. Explicit fields are persisted through the SDK without running another metadata-provider lookup during an artwork-only validation refresh. Successful upload or playback alone is not proof of correct catalog presentation.
 
 ## Upgrade and live verification
 

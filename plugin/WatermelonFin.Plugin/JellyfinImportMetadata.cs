@@ -9,6 +9,7 @@ using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.IO;
 using WatermelonFin.Plugin.Core;
+using SkiaSharp;
 
 namespace WatermelonFin.Plugin;
 
@@ -23,34 +24,36 @@ public sealed class JellyfinImportMetadata(ILibraryManager library,IProviderMana
         if(item is not Video || item.Id==Guid.Empty || !string.Equals(Path.GetFullPath(item.Path),Path.GetFullPath(import.VideoPath),OperatingSystem.IsWindows()?StringComparison.OrdinalIgnoreCase:StringComparison.Ordinal))throw new UploadException("Completed import is not indexed as the expected video item",409);
         return item;
     }
-    private void ImagePath(CompletedImport import,string path)
+    private bool ImagePath(CompletedImport import,string path,bool allowMissing=false)
     {
         var full=Path.GetFullPath(path);
         var roots=new[]{Path.GetDirectoryName(import.VideoPath)!,paths.InternalMetadataPath,paths.CachePath}.Where(p=>!string.IsNullOrWhiteSpace(p)).Select(p=>Path.TrimEndingDirectorySeparator(Path.GetFullPath(p)));
         var root=roots.FirstOrDefault(r=>!Path.GetRelativePath(r,full).StartsWith(".."+Path.DirectorySeparatorChar,StringComparison.Ordinal)&&Path.GetRelativePath(r,full)!=".."&&!Path.IsPathRooted(Path.GetRelativePath(r,full)));
         if(root==null)throw new UploadException("Artwork is outside this import and Jellyfin-managed artwork locations",409);
-        var info=new FileInfo(full);if(!info.Exists || info.LinkTarget!=null || (info.Attributes&FileAttributes.ReparsePoint)!=0 || info.Length>MetadataArtwork.MaximumBytes)throw new UploadException("Existing artwork cannot be safely restored",409);
+        var info=new FileInfo(full);var exists=info.Exists;if(info.LinkTarget!=null || (exists&&((info.Attributes&FileAttributes.ReparsePoint)!=0 || info.Length>MetadataArtwork.MaximumBytes)))throw new UploadException("Existing artwork cannot be safely restored",409);
         var current=Path.GetDirectoryName(full)!;
-        while(true){var dir=new DirectoryInfo(current);if(!dir.Exists || dir.LinkTarget!=null || (dir.Attributes&FileAttributes.ReparsePoint)!=0)throw new UploadException("Symlinked artwork location refused",409);if(current==root)break;current=Path.GetDirectoryName(current)??throw new UploadException("Invalid artwork location");}
+        while(true){var dir=new DirectoryInfo(current);if(dir.LinkTarget!=null || (dir.Exists&&(dir.Attributes&FileAttributes.ReparsePoint)!=0))throw new UploadException("Symlinked artwork location refused",409);if(!dir.Exists)exists=false;if(current==root)break;current=Path.GetDirectoryName(current)??throw new UploadException("Invalid artwork location");}
+        if(!exists&&!allowMissing)throw new UploadException("Original artwork file is missing; restore could not finish",409);return exists;
     }
     private static string? Optional(string? value)=>string.IsNullOrEmpty(value)?null:value;
     public IndexedImport Read(CompletedImport import)
     {
         var item=Item(import);var artwork=new Dictionary<string,string?>();
         foreach(var (role,type) in new[]{("primary",ImageType.Primary),("backdrop",ImageType.Backdrop)})
-        {var image=item.GetImageInfo(type,0);artwork[role]=image?.Path;if(image!=null)ImagePath(import,image.Path);}
+        {var image=item.GetImageInfo(type,0);artwork[role]=image!=null&&ImagePath(import,image.Path,true)?image.Path:null;}
         var document=new MetadataDocument{Title=item.Name??"",OriginalTitle=Optional(item.OriginalTitle),SortTitle=Optional(item.ForcedSortName),Overview=Optional(item.Overview),ProductionYear=item.ProductionYear,PremiereDate=item.PremiereDate?.ToString("yyyy-MM-dd"),Studios=item.Studios,Genres=item.Genres,ProviderIds=item.ProviderIds.Where(p=>ProviderNames.Contains(p.Key.ToLowerInvariant())).ToDictionary(p=>p.Key,p=>p.Value,StringComparer.OrdinalIgnoreCase)};
         document.ValidateSnapshot();return new(item.Id,new(document,item.IsLocked,item.LockedFields.Select(f=>f.ToString()).ToArray(),artwork));
     }
     public void ValidateArtwork(CompletedImport import,byte[] bytes)
     {
-        var extension=MetadataArtwork.Validate(bytes);var name=Path.Combine(import.JournalDirectory,".artwork-validation-"+Guid.NewGuid().ToString("N")+"."+extension);
+        MetadataArtwork.Validate(bytes);
         try
         {
-            using(var file=new FileStream(name,FileMode.CreateNew,FileAccess.Write,FileShare.None)){file.Write(bytes);}
-            var size=images.GetImageDimensions(name);if(size.Width<1 || size.Height<1 || size.Width>8192 || size.Height>8192 || (long)size.Width*size.Height>40_000_000)throw new UploadException("Artwork could not be decoded within the allowed dimensions");
+            using var data=SKData.CreateCopy(bytes);using var codec=SKCodec.Create(data);
+            if(codec==null || codec.Info.Width<1 || codec.Info.Height<1 || codec.Info.Width>8192 || codec.Info.Height>8192 || (long)codec.Info.Width*codec.Info.Height>40_000_000)throw new UploadException("Artwork could not be decoded within the allowed dimensions");
+            var info=new SKImageInfo(codec.Info.Width,codec.Info.Height,SKColorType.Rgba8888,SKAlphaType.Premul);using var bitmap=new SKBitmap();
+            if(!bitmap.TryAllocPixels(info) || codec.GetPixels(info,bitmap.GetPixels())!=SKCodecResult.Success)throw new UploadException("Artwork pixel data is incomplete or invalid");
         }catch(UploadException){throw;}catch(Exception e)when(e is IOException or ArgumentException or InvalidOperationException){throw new UploadException("Artwork could not be decoded");}
-        finally{File.Delete(name);}
     }
     private static string? DesiredImage(CompletedImport import,ImportMetadataState state,string role)
     {
@@ -82,10 +85,14 @@ public sealed class JellyfinImportMetadata(ILibraryManager library,IProviderMana
     }
     public Task Refresh(CompletedImport import)
     {
-        var item=Item(import);var options=new MetadataRefreshOptions(new DirectoryService(fileSystem)){MetadataRefreshMode=MetadataRefreshMode.ValidationOnly,ImageRefreshMode=MetadataRefreshMode.ValidationOnly,ReplaceAllMetadata=false,EnableRemoteContentProbe=false,IsAutomated=false};
+        // Fields were explicitly persisted above. Do not let another metadata provider replace them,
+        // particularly during an artwork-only edit after an administrator corrected the index.
+        var item=Item(import);var options=new MetadataRefreshOptions(new DirectoryService(fileSystem)){MetadataRefreshMode=MetadataRefreshMode.None,ImageRefreshMode=MetadataRefreshMode.ValidationOnly,ReplaceAllMetadata=false,EnableRemoteContentProbe=false,IsAutomated=false};
         return providers.RefreshSingleItem(item,options,CancellationToken.None);
     }
-    private static string Comparable(MetadataDocument d)=>JsonSerializer.Serialize(new{d.Title,d.OriginalTitle,d.SortTitle,d.Overview,d.ProductionYear,d.PremiereDate,d.Studios,d.Genres,ProviderIds=d.ProviderIds.OrderBy(p=>p.Key,StringComparer.OrdinalIgnoreCase).Select(p=>new{Key=p.Key.ToLowerInvariant(),p.Value})});
+    private static string Comparable(MetadataDocument d)=>JsonSerializer.Serialize(new{d.Title,OriginalTitle=Optional(d.OriginalTitle),SortTitle=Optional(d.SortTitle),Overview=Optional(d.Overview),d.ProductionYear,d.PremiereDate,d.Studios,d.Genres,ProviderIds=d.ProviderIds.OrderBy(p=>p.Key,StringComparer.OrdinalIgnoreCase).Select(p=>new{Key=p.Key.ToLowerInvariant(),p.Value})});
+    public bool SnapshotMatches(MetadataSnapshot expected,MetadataSnapshot actual)
+        =>Comparable(expected.Document)==Comparable(actual.Document)&&expected.IsLocked==actual.IsLocked&&expected.LockedFields.SequenceEqual(actual.LockedFields)&&new[]{"primary","backdrop"}.All(role=>expected.ArtworkPaths?.GetValueOrDefault(role)==actual.ArtworkPaths?.GetValueOrDefault(role));
     public bool Matches(CompletedImport import,ImportMetadataState state,IndexedImport indexed)
     {
         var expected=state.Metadata;if(expected==null || Comparable(expected.Document)!=Comparable(indexed.Snapshot.Document) || expected.IsLocked!=indexed.Snapshot.IsLocked || !expected.LockedFields.SequenceEqual(indexed.Snapshot.LockedFields))return false;

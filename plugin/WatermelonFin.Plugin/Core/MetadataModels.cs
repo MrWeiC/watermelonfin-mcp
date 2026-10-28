@@ -80,7 +80,7 @@ public sealed class MetadataDocument
 }
 
 public sealed record MetadataSnapshot(MetadataDocument Document, bool IsLocked, string[] LockedFields, Dictionary<string,string?>? ArtworkPaths = null);
-public sealed record ImportMetadataState(string Revision, MetadataSnapshot? Metadata, Dictionary<string,byte[]?> Files, bool Pending = false);
+public sealed record ImportMetadataState(string Revision, MetadataSnapshot? Metadata, Dictionary<string,byte[]?> Files, bool Pending = false, string Synchronization = "pending", MetadataSnapshot? Observed = null);
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed class MetadataUpdateRequest

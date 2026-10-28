@@ -40,9 +40,10 @@ public sealed class ImportMetadataStore(UploadStore uploads)
     private static void ValidateState(ImportMetadataState state)
     {
         Revision(state.Revision);
+        if(state.Synchronization is not ("pending" or "verified" or "mismatch" or "not-requested" or "external-changes"))throw new UploadException("Invalid metadata synchronization state");
         if(state.Files==null || state.Files.Count!=Names.Length || Names.Any(n=>!state.Files.ContainsKey(n)) || state.Files.Any(f=>f.Value?.Length>Limit(f.Key)))throw new UploadException("Invalid metadata revision content");
-        if(state.Metadata!=null){state.Metadata.Document.ValidateSnapshot();if(state.Metadata.LockedFields==null || state.Metadata.LockedFields.Length>100 || state.Metadata.LockedFields.Any(s=>s.Length>100))throw new UploadException("Invalid metadata lock snapshot");
-            if(state.Metadata.ArtworkPaths is { } paths && (paths.Count>2 || paths.Any(p=>p.Key is not ("primary" or "backdrop") || p.Value?.Length>4096)))throw new UploadException("Invalid artwork snapshot");}
+        foreach(var snapshot in new[]{state.Metadata,state.Observed})if(snapshot!=null){snapshot.Document.ValidateSnapshot();if(snapshot.LockedFields==null || snapshot.LockedFields.Length>100 || snapshot.LockedFields.Any(s=>s.Length>100))throw new UploadException("Invalid metadata lock snapshot");
+            if(snapshot.ArtworkPaths is { } paths && (paths.Count>2 || paths.Any(p=>p.Key is not ("primary" or "backdrop") || p.Value?.Length>4096)))throw new UploadException("Invalid artwork snapshot");}
     }
     private static async Task<ImportMetadataState> ReadState(CompletedImport import,string name)
     {
@@ -63,13 +64,13 @@ public sealed class ImportMetadataStore(UploadStore uploads)
             return state;
         }
         var files=new Dictionary<string,byte[]?>();foreach(var name in Names)files[name]=await ReadFixed(Path.GetDirectoryName(import.VideoPath)!,MetadataFiles.Name(import,name),Limit(name));
-        return new("initial",baseline,files);
+        return new("initial",baseline,files,Synchronization:"not-requested",Observed:baseline);
     }
     private static void Expected(ImportMetadataState state,string expected)
     {Revision(expected);if(state.Revision!=expected)throw new UploadException("Metadata revision conflict; inspect the import again",409);}
     private static async Task<ImportMetadataState> Commit(CompletedImport import,ImportMetadataState before,ImportMetadataState after)
     {
-        after=after with{Revision=Guid.NewGuid().ToString("D"),Pending=true};ValidateState(after);
+        after=after with{Revision=Guid.NewGuid().ToString("D"),Pending=true,Synchronization="pending",Observed=null};ValidateState(after);
         if(Directory.EnumerateFiles(import.JournalDirectory,"metadata-revision-*.json").Take(100).Count()>=100)throw new UploadException("Metadata revision quota reached",409);
         var backup="metadata-revision-"+before.Revision+".json";
         if(!SafePaths.IsFile(Path.Combine(import.JournalDirectory,backup)))await SaveState(import,backup,before);
@@ -79,6 +80,24 @@ public sealed class ImportMetadataStore(UploadStore uploads)
     }
     public Task<ImportMetadataState> Inspect(Guid owner,Guid job,MetadataSnapshot? baseline=null)
         =>WithImport(owner,job,import=>Current(import,baseline));
+    public Task<bool> FilesMatch(Guid owner,Guid job,string revision)=>WithImport(owner,job,async import=>{
+        var state=await Current(import,null);Expected(state,revision);
+        foreach(var name in Names){var actual=await ReadFixed(Path.GetDirectoryName(import.VideoPath)!,MetadataFiles.Name(import,name),Limit(name));var saved=state.Files[name];if((actual==null)!=(saved==null) || (actual!=null&&!actual.SequenceEqual(saved!)))return false;}return true;
+    });
+    public Task<ImportMetadataState> MarkSynchronization(Guid owner,Guid job,string revision,string status,MetadataSnapshot? observed=null,MetadataSnapshot? baseline=null)=>WithImport(owner,job,async import=>{
+        var state=await Current(import,baseline);Expected(state,revision);
+        if(status is not ("pending" or "verified" or "mismatch") || (status=="verified"&&(observed==null||state.Pending)))throw new UploadException("Invalid synchronization transition");
+        state=state with{Synchronization=status,Observed=observed??state.Observed};ValidateState(state);await SaveState(import,"metadata-current.json",state);return state;
+    });
+    public Task<ImportMetadataState> AdoptCurrent(Guid owner,Guid job,string revision,MetadataSnapshot observed)=>WithImport(owner,job,async import=>{
+        var before=await Current(import,null);Expected(before,revision);
+        if(before.Synchronization=="pending")throw new UploadException("Finish or restore the pending metadata revision first",409);
+        var actual=new Dictionary<string,byte[]?>();foreach(var name in Names)actual[name]=await ReadFixed(Path.GetDirectoryName(import.VideoPath)!,MetadataFiles.Name(import,name),Limit(name));
+        var after=new ImportMetadataState(Guid.NewGuid().ToString("D"),observed,actual,Synchronization:"external-changes",Observed:observed);ValidateState(after);
+        if(Directory.EnumerateFiles(import.JournalDirectory,"metadata-revision-*.json").Take(100).Count()>=100)throw new UploadException("Metadata revision quota reached",409);
+        var backup="metadata-revision-"+before.Revision+".json";if(!SafePaths.IsFile(Path.Combine(import.JournalDirectory,backup)))await SaveState(import,backup,before);
+        await SaveState(import,"metadata-current.json",after);return after;
+    });
     public Task<ImportMetadataState> Apply(Guid owner,Guid job,string expected,MetadataDocument document,MetadataSnapshot? baseline=null)
         =>WithImport(owner,job,async import=>{
             document.Validate();var before=await Current(import,baseline);Expected(before,expected);

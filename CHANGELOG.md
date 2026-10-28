@@ -10,6 +10,7 @@
 - Advertise metadata capabilities; reject older native plugins before mutation.
 - Derive package/catalog versions from the native project.
 - Bundle the existing WatermelonFin logo for Jellyfin installed-plugin/catalog images and MCP protocol icons.
+- Persist SDK synchronization status, replay journals before reading dangling artwork, validate full image pixels, and detect/capture external metadata drift before subsequent edits.
 
 ## 0.1.2
 

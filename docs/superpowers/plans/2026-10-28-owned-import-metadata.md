@@ -68,8 +68,8 @@
 
 - [x] Document ownership scope, required plugin upgrade, new routes/tools, bounded artwork workflow, revision/restore semantics, and ordinary-user permissions.
 - [x] Run `npm test`, `npm audit --omit=dev`, and `scripts/validate-plugin.sh` with .NET 10; inspect the packaged DLL/version/checksum.
-- [ ] Review the complete branch with emphasis on the five Review Focus conditions and fix any findings with regression tests.
-- [ ] Produce a reviewable branch/PR and compiled plugin package. Preserve the active v0.1.2 until deployment is ready.
+- [x] Review the complete branch with emphasis on the five Review Focus conditions and fix any findings with regression tests.
+- [x] Produce a reviewable branch/PR and compiled plugin package. Preserve the active v0.1.2 until deployment is ready.
 - [ ] After the updated server plugin is deployed/restarted, reconnect the local MCP and confirm capabilities.
 - [ ] Inspect Noah, apply verified Sight & Sound title/description/studio/genres and artwork using only its owned job ID, and read back the new state.
 - [ ] Verify clean title, registered poster, Home School membership, and successful bounded video streaming; record any metadata fields still unverified rather than guessing them.

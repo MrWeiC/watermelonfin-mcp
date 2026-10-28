@@ -23,7 +23,7 @@ export const importMetadataDocument=z.object({
 const indexedDocument=z.object({
  title:z.string().max(512),originalTitle:z.string().max(512).nullable().optional(),sortTitle:z.string().max(512).nullable().optional(),overview:z.string().max(100000).nullable().optional(),productionYear:z.number().int().nullable().optional(),premiereDate:z.string().nullable().optional(),studios:z.array(z.string().max(512)).max(100).default([]),genres:z.array(z.string().max(512)).max(100).default([]),providerIds:z.record(z.string().max(40),z.string().max(512)).default({})
 }).strict();
-const response=z.object({jobId:importJobId,revision:metadataRevision,revisions:z.array(metadataRevision).max(100),persistedMetadata:indexedDocument.nullable(),indexedMetadata:indexedDocument.nullable(),artwork:z.object({primary:z.boolean(),backdrop:z.boolean()}).strict(),verified:z.boolean(),refreshStatus:z.enum(['not-requested','completed','pending','mismatch'])}).strict();
+const response=z.object({jobId:importJobId,revision:metadataRevision,revisions:z.array(metadataRevision).max(100),persistedMetadata:indexedDocument.nullable(),indexedMetadata:indexedDocument.nullable(),artwork:z.object({primary:z.boolean(),backdrop:z.boolean()}).strict(),verified:z.boolean(),refreshStatus:z.enum(['not-requested','completed','pending','mismatch','external-changes'])}).strict();
 const maximumArtwork=8*1024**2;
 async function supports(jellyfin){
  const c=await inspectUploadPlugin(jellyfin);
@@ -34,7 +34,7 @@ function comparable(d){return JSON.stringify({title:d.title,originalTitle:d.orig
 function readResult(jobId,value){
  const parsed=response.safeParse(value);if(!parsed.success||parsed.data.jobId!==jobId)throw new Error('Invalid plugin metadata response');
  const result=parsed.data;
- if(result.verified&&(result.refreshStatus==='pending'||!result.persistedMetadata||!result.indexedMetadata||comparable(result.persistedMetadata)!==comparable(result.indexedMetadata)))throw new Error('Plugin returned inconsistent metadata verification');
+ if(result.verified&&(result.refreshStatus!=='completed'||!result.persistedMetadata||!result.indexedMetadata||comparable(result.persistedMetadata)!==comparable(result.indexedMetadata)))throw new Error('Plugin returned inconsistent metadata verification');
  return result;
 }
 export async function inspectImportMetadata(jellyfin,jobId){
