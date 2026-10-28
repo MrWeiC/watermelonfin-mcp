@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
-    <Version>0.1.2.0</Version><AssemblyName>WatermelonFin.Plugin</AssemblyName><RootNamespace>WatermelonFin.Plugin</RootNamespace>
+    <Version>0.1.3.0</Version><AssemblyName>WatermelonFin.Plugin</AssemblyName><RootNamespace>WatermelonFin.Plugin</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

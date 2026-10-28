@@ -7,7 +7,7 @@ import {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
 import {Jellyfin} from '../src/jellyfin.js';
 import {inspectImportMetadata,updateImportMetadata,setImportArtwork,restoreImportMetadata,refreshImportMetadata} from '../src/import-metadata.js';
-const job='2989b984-d06a-4870-967a-7aa8d65a04f6';
+const job='6d2a1938-54f5-4c6b-bc8e-c6c13c82cb08';
 const revision='9a03d351-f61d-4533-9b73-929934c2b4af';
 const document={title:'NOAH',overview:'Sight & Sound stage production',studios:['Sight & Sound Theatres'],genres:['Faith','Musical','Family']};
 const caps={protocol:'watermelonfin-upload.v1',delete:false,overwrite:false,metadataProtocol:'watermelonfin-metadata.v1',ownedImportMetadata:true,metadataRestore:true,maxArtworkBytes:8388608,artworkRoles:['primary','backdrop']};

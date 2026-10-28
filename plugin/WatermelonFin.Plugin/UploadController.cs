@@ -46,7 +46,7 @@ public sealed class UploadController(IAuthorizationContext authorization, Upload
         catch(UnauthorizedAccessException){return StatusCode(503,new { error="Upload storage permissions do not allow this operation" });}
     }
     [HttpGet("Capabilities")]
-    public Task<ActionResult> Capabilities()=>Safe(async()=>{await RequireUser();return new {protocol="watermelonfin-upload.v1",enabled=true,delete=false,overwrite=false,maxChunkBytes=UploadStore.MaximumChunkBytes,maxFileBytes=UploadStore.MaximumFileBytes,metadataProtocol="watermelonfin-metadata.v1",ownedImportMetadata=true,metadataRestore=true,maxArtworkBytes=MetadataArtwork.MaximumBytes,artworkRoles=new[]{"primary","backdrop"}};});
+    public Task<ActionResult> Capabilities()=>Safe(async()=>{await RequireUser();return new {protocol="watermelonfin-upload.v1",enabled=true,delete=false,overwrite=false,maxChunkBytes=UploadStore.MaximumChunkBytes,maxFileBytes=UploadStore.MaximumFileBytes,metadataProtocol="watermelonfin-metadata.v1",ownedImportMetadata=true,metadataRestore=true,metadataMediaTypes=new[]{"Video"},maxArtworkBytes=MetadataArtwork.MaximumBytes,artworkRoles=new[]{"primary","backdrop"}};});
     [HttpGet("Targets")]
     public Task<ActionResult> GetTargets()=>Safe(async()=>{await RequireUser();return Targets().Select(t=>new {id=t.Id,name=t.Name,kind=t.Kind}).ToArray();});
     [HttpGet("AdminInfo")]

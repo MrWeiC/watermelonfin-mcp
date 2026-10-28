@@ -47,6 +47,12 @@ public sealed class MetadataDocument
             if (!keys.Add(key) || value == null || !Regex.IsMatch(value,key.ToLowerInvariant() switch { "imdb" => "^tt[0-9]{4,12}$", "tmdb" or "tvdb" => "^[1-9][0-9]{0,11}$", _ => "(?!)" })) throw new UploadException("Invalid metadata provider identifier");
         }
     }
+    public void ValidateSnapshot()
+    {
+        // Existing incorrect data must remain restorable even if it is not a valid new edit.
+        if(Title==null || Title.Length>512 || OriginalTitle?.Length>512 || SortTitle?.Length>512 || Overview?.Length>100000 || Studios==null || Genres==null || Studios.Length>100 || Genres.Length>100 || Studios.Concat(Genres).Any(s=>s==null || s.Length>512) || ProviderIds==null || ProviderIds.Count>3 || ProviderIds.Any(p=>p.Key is null || p.Key.Length>40 || p.Value==null || p.Value.Length>512))throw new UploadException("Original metadata exceeds safe snapshot limits");
+        if(PremiereDate!=null&&!DateOnly.TryParseExact(PremiereDate,"yyyy-MM-dd",out _))throw new UploadException("Invalid original premiere date");
+    }
     public byte[] Nfo(byte[]? original = null, string rootName = "movie")
     {
         if(rootName is not ("movie" or "episodedetails"))throw new UploadException("Unsupported metadata document type");

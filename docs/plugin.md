@@ -57,7 +57,7 @@ npm ci --ignore-scripts
 
 Use `DOTNET_BINARY=/absolute/path/to/dotnet` if the SDK is not on PATH. Validation runs locally; no GitHub Actions workflow is used.
 
-The output is `artifacts/WatermelonFin.Upload-0.1.2.0.zip`, containing the plugin assembly and license/notices. A source archive is not an installable plugin package.
+The v0.1.3 build outputs `artifacts/WatermelonFin.Upload-0.1.3.0.zip`, containing the plugin assembly and license/notices. A source archive is not an installable plugin package. The packager derives the version from the native project; it does not publish the ZIP or change the checked-in catalog.
 
 To generate a catalog entry, supply the actual server-accessible HTTPS URL of the corresponding published ZIP:
 
@@ -86,3 +86,17 @@ The plugin provides a receiving API and a configuration page. A graphical drag-a
 ### 0.1.2 compatibility fixes
 
 MCP uses the standard `Authorization: MediaBrowser ...` header for login, reads and native uploads. New uploads use a readable top-level folder such as `Lesson One [unique-id]/Lesson One.mp4` instead of a UUID-only folder. Movies and TV retain their planned filenames and season paths inside a readable unique folder. The identifier remains visible where Jellyfin derives titles from folders; exact title rendering depends on library metadata settings. Existing jobs retain the old layout and are never moved or renamed.
+
+### 0.1.3 owned-import metadata repair
+
+The new MCP and native plugin can repair and restore only the authenticated user's completed video imports. Unique storage folders remain unchanged; explicit NFO/indexed titles avoid displaying job IDs as titles. See [the full workflow](owned-import-metadata.md) for replacement-field semantics, bounded local artwork, revision history, restore, and readback verification. Upgrading both components and restarting Jellyfin is required; the published v0.1.2 package lacks these routes.
+
+| Method | Route under `WatermelonFin/Upload/Jobs/{job-id}` | Purpose |
+| --- | --- | --- |
+| GET | `Metadata` | Inspect owned import metadata, revision history, images, and indexed state |
+| POST | `Metadata` | Replace supported metadata fields using an expected revision |
+| POST | `Artwork/{primary-or-backdrop}?expectedRevision=...` | Stream a bounded local JPEG/PNG |
+| POST | `Metadata/Restore` | Restore a job-private historical revision as a new revision |
+| POST | `Metadata/Refresh` | Reapply and refresh/read back only the exact owned item |
+
+Writes preserve video bytes and publication paths. There is no general metadata editor for other media, no media deletion/overwrite, and no arbitrary filesystem or remote-artwork-fetch API.

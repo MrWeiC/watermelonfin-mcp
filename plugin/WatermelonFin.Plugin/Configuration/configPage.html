@@ -3,9 +3,9 @@
 <div id="watermelonfinUploadPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox,emby-textarea">
 <div data-role="content"><div class="content-primary"><form id="watermelonfinUploadForm">
 <h2>WatermelonFin Upload</h2>
-<p>Only new files can be imported. No delete, overwrite, or arbitrary destination API is provided.</p>
+<p>Imports create new video files. Authorized users can repair metadata and artwork of their own completed video imports, with revision history and restore. No media deletion, video overwrite, or arbitrary destination API is provided.</p>
 <p>This native plugin shares Jellyfin's operating-system permissions. It is not a separate filesystem sandbox.</p>
-<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="wfEnabled"/><span>Enable uploads</span></label></div>
+<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="wfEnabled"/><span>Enable uploads and owned-import metadata repair</span></label></div>
 <div class="inputContainer"><label class="inputLabel" for="wfUsers">Allowed restricted user IDs (comma separated)</label><input is="emby-input" id="wfUsers"/><div class="fieldDescription">Use a non-administrator Jellyfin user with all content-deletion permissions disabled. Empty list denies everyone.</div></div>
 <div class="inputContainer"><label class="inputLabel" for="wfTargets">Targets (JSON)</label><textarea is="emby-textarea" id="wfTargets" rows="10"></textarea><div class="fieldDescription">Fields: Id, Name, Kind. Kind is movies, tv, or other. No filesystem paths are accepted.</div></div>
 <h3>Library source paths</h3><pre id="wfPaths"></pre><p>Add each Imported target path to the intended Jellyfin library through Dashboard → Libraries. Never add the Staging directory.</p>

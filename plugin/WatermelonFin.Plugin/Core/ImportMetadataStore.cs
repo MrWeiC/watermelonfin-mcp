@@ -41,7 +41,7 @@ public sealed class ImportMetadataStore(UploadStore uploads)
     {
         Revision(state.Revision);
         if(state.Files==null || state.Files.Count!=Names.Length || Names.Any(n=>!state.Files.ContainsKey(n)) || state.Files.Any(f=>f.Value?.Length>Limit(f.Key)))throw new UploadException("Invalid metadata revision content");
-        if(state.Metadata!=null){state.Metadata.Document.Validate(256);if(state.Metadata.LockedFields==null || state.Metadata.LockedFields.Length>100 || state.Metadata.LockedFields.Any(s=>s.Length>100))throw new UploadException("Invalid metadata lock snapshot");
+        if(state.Metadata!=null){state.Metadata.Document.ValidateSnapshot();if(state.Metadata.LockedFields==null || state.Metadata.LockedFields.Length>100 || state.Metadata.LockedFields.Any(s=>s.Length>100))throw new UploadException("Invalid metadata lock snapshot");
             if(state.Metadata.ArtworkPaths is { } paths && (paths.Count>2 || paths.Any(p=>p.Key is not ("primary" or "backdrop") || p.Value?.Length>4096)))throw new UploadException("Invalid artwork snapshot");}
     }
     private static async Task<ImportMetadataState> ReadState(CompletedImport import,string name)

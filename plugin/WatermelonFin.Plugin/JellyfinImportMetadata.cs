@@ -39,8 +39,8 @@ public sealed class JellyfinImportMetadata(ILibraryManager library,IProviderMana
         var item=Item(import);var artwork=new Dictionary<string,string?>();
         foreach(var (role,type) in new[]{("primary",ImageType.Primary),("backdrop",ImageType.Backdrop)})
         {var image=item.GetImageInfo(type,0);artwork[role]=image?.Path;if(image!=null)ImagePath(import,image.Path);}
-        var document=new MetadataDocument{Title=item.Name,OriginalTitle=Optional(item.OriginalTitle),SortTitle=Optional(item.ForcedSortName),Overview=Optional(item.Overview),ProductionYear=item.ProductionYear,PremiereDate=item.PremiereDate?.ToString("yyyy-MM-dd"),Studios=item.Studios,Genres=item.Genres,ProviderIds=item.ProviderIds.Where(p=>ProviderNames.Contains(p.Key.ToLowerInvariant())).ToDictionary(p=>p.Key,p=>p.Value,StringComparer.OrdinalIgnoreCase)};
-        document.Validate(256);return new(item.Id,new(document,item.IsLocked,item.LockedFields.Select(f=>f.ToString()).ToArray(),artwork));
+        var document=new MetadataDocument{Title=item.Name??"",OriginalTitle=Optional(item.OriginalTitle),SortTitle=Optional(item.ForcedSortName),Overview=Optional(item.Overview),ProductionYear=item.ProductionYear,PremiereDate=item.PremiereDate?.ToString("yyyy-MM-dd"),Studios=item.Studios,Genres=item.Genres,ProviderIds=item.ProviderIds.Where(p=>ProviderNames.Contains(p.Key.ToLowerInvariant())).ToDictionary(p=>p.Key,p=>p.Value,StringComparer.OrdinalIgnoreCase)};
+        document.ValidateSnapshot();return new(item.Id,new(document,item.IsLocked,item.LockedFields.Select(f=>f.ToString()).ToArray(),artwork));
     }
     public void ValidateArtwork(CompletedImport import,byte[] bytes)
     {
@@ -60,7 +60,7 @@ public sealed class JellyfinImportMetadata(ILibraryManager library,IProviderMana
     }
     public async Task Synchronize(CompletedImport import,ImportMetadataState state)
     {
-        var item=Item(import);var snapshot=state.Metadata??throw new UploadException("Missing original indexed metadata snapshot",409);var doc=snapshot.Document;doc.Validate(256);
+        var item=Item(import);var snapshot=state.Metadata??throw new UploadException("Missing original indexed metadata snapshot",409);var doc=snapshot.Document;doc.ValidateSnapshot();
         item.Name=doc.Title;item.OriginalTitle=doc.OriginalTitle;item.ForcedSortName=doc.SortTitle;item.Overview=doc.Overview;item.ProductionYear=doc.ProductionYear;
         item.PremiereDate=doc.PremiereDate==null?null:DateTime.SpecifyKind(DateOnly.ParseExact(doc.PremiereDate,"yyyy-MM-dd").ToDateTime(TimeOnly.MinValue),DateTimeKind.Utc);
         item.Studios=doc.Studios;item.Genres=doc.Genres;item.IsLocked=snapshot.IsLocked;

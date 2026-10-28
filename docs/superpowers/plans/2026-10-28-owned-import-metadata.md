@@ -1,6 +1,6 @@
 # Owned Import Metadata Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Let a restricted user inspect, repair, and restore metadata/artwork of their own completed plugin imports, including the existing Noah, without touching video bytes or other media.
 
@@ -32,11 +32,11 @@
 
 **Interfaces:** `UploadStore.ResolveCompleted(Guid owner, Guid jobId)` returns a validated owned completed import resolved from the manifest. `ImportMetadataStore.Inspect/Apply/Restore` consume that import, strict metadata, expected revision, and bounded image content; return revision and persisted state. No client-controlled destination enters these interfaces.
 
-- [ ] Write failing core tests for foreign owners, completed legacy manifests after expiry, incomplete imports, substituted ancestors, XML escaping/field bounds, image validation, concurrent stale revisions, snapshot/restore of present and absent files, and unchanged video hash.
-- [ ] Run the core test project and confirm failures identify missing metadata behavior.
-- [ ] Implement canonical ownership resolution, strict models, fixed sidecar/image locations, atomic publication, private per-job revision journal, and restore as a new revision.
-- [ ] Run all core tests; confirm rejected requests leave no side effects and video hashes remain unchanged.
-- [ ] Commit the passing ownership/persistence change.
+- [x] Write failing core tests for foreign owners, completed legacy manifests after expiry, incomplete imports, substituted ancestors, XML escaping/field bounds, image validation, concurrent stale revisions, snapshot/restore of present and absent files, and unchanged video hash.
+- [x] Run the core test project and confirm failures identify missing metadata behavior.
+- [x] Implement canonical ownership resolution, strict models, fixed sidecar/image locations, atomic publication, private per-job revision journal, and restore as a new revision.
+- [x] Run all core tests; confirm rejected requests leave no side effects and video hashes remain unchanged.
+- [x] Commit the passing ownership/persistence change.
 
 ## Task 2: Scoped native routes and Jellyfin integration
 
@@ -44,11 +44,11 @@
 
 **Interfaces:** fixed routes under `WatermelonFin/Upload/Jobs/{jobId}/Metadata`, `/Artwork/{role}`, `/Metadata/Restore`, and `/Metadata/Refresh`. A Jellyfin adapter resolves the item from the validated completed import's path, reads presentation state, applies allowed fields/images, and refreshes that item only. Capability advertisement includes protocol version and supported metadata/artwork limits.
 
-- [ ] Write failing adapter tests for authentication/owner/target revocation on every route, unknown fields, body limits, item/path mismatch, exact-item refresh, original presentation snapshots, and response distinction between requested/persisted/indexed state.
-- [ ] Build against real Jellyfin 12.4.0 assemblies; record the expected failing tests.
-- [ ] Implement the adapter using actual SDK methods and register it through DI. Keep arbitrary item IDs and remote URLs absent from request models.
-- [ ] Run core and adapter suites; verify restore, locks/field preservation, and safe errors without credentials or server internals.
-- [ ] Commit the passing plugin endpoints/adapter change.
+- [x] Write failing adapter tests for authentication/owner/target revocation on every route, unknown fields, body limits, item/path mismatch, exact-item refresh, original presentation snapshots, and response distinction between requested/persisted/indexed state.
+- [x] Build against real Jellyfin 12.4.0 assemblies; record the expected failing tests.
+- [x] Implement the adapter using actual SDK methods and register it through DI. Keep arbitrary item IDs and remote URLs absent from request models.
+- [x] Run core and adapter suites; verify restore, locks/field preservation, and safe errors without credentials or server internals.
+- [x] Commit the passing plugin endpoints/adapter change.
 
 ## Task 3: MCP inspection, updates, artwork, restore, and refresh
 
@@ -56,18 +56,18 @@
 
 **Interfaces:** tools `inspect_import_metadata`, `update_import_metadata`, `set_import_artwork`, `restore_import_metadata`, `refresh_import_metadata` accept `profileId + jobId`. Updates take strict metadata and an expected revision; artwork takes role plus a local file constrained by `WATERMELONFIN_UPLOAD_ROOTS`. Responses expose resulting revision, indexed values, image state, and verification status.
 
-- [ ] Write failing stdio/HTTP-boundary tests for each tool, strict unknown-field rejection, old-plugin capability refusal, allowed-root/symlink enforcement, bounded authentic images, redirect refusal, and secret scrubbing.
-- [ ] Run the new Node tests and confirm expected feature-missing failures.
-- [ ] Implement only bounded native metadata routes, safe local artwork streaming, strict tool schemas, and clear pending/verified results.
-- [ ] Run `npm test` and full native adapter validation; confirm no regressions in existing upload/read tools.
-- [ ] Commit the passing MCP tools change.
+- [x] Write failing stdio/HTTP-boundary tests for each tool, strict unknown-field rejection, old-plugin capability refusal, allowed-root/symlink enforcement, bounded authentic images, redirect refusal, and secret scrubbing.
+- [x] Run the new Node tests and confirm expected feature-missing failures.
+- [x] Implement only bounded native metadata routes, safe local artwork streaming, strict tool schemas, and clear pending/verified results.
+- [x] Run `npm test` and full native adapter validation; confirm no regressions in existing upload/read tools.
+- [x] Commit the passing MCP tools change.
 
 ## Task 4: Documentation, packaging, review, and live repair
 
 **Files:** update `README.md`, `SECURITY.md`, `docs/plugin.md`, onboarding recipe, version/package metadata, and packaging tests as required. Keep existing released tags/assets untouched.
 
-- [ ] Document ownership scope, required plugin upgrade, new routes/tools, bounded artwork workflow, revision/restore semantics, and ordinary-user permissions.
-- [ ] Run `npm test`, `npm audit --omit=dev`, and `scripts/validate-plugin.sh` with .NET 10; inspect the packaged DLL/version/checksum.
+- [x] Document ownership scope, required plugin upgrade, new routes/tools, bounded artwork workflow, revision/restore semantics, and ordinary-user permissions.
+- [x] Run `npm test`, `npm audit --omit=dev`, and `scripts/validate-plugin.sh` with .NET 10; inspect the packaged DLL/version/checksum.
 - [ ] Review the complete branch with emphasis on the five Review Focus conditions and fix any findings with regression tests.
 - [ ] Produce a reviewable branch/PR and compiled plugin package. Preserve the active v0.1.2 until deployment is ready.
 - [ ] After the updated server plugin is deployed/restarted, reconnect the local MCP and confirm capabilities.

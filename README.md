@@ -1,8 +1,8 @@
 # WatermelonFin MCP
 
-A local Model Context Protocol (MCP) server for discovering Jellyfin servers, querying media libraries, and importing **new** media through a companion Jellyfin plugin.
+A local Model Context Protocol (MCP) server for discovering Jellyfin servers, querying media libraries, importing **new** media, and repairing metadata/artwork of **your own completed video imports** through a companion Jellyfin plugin.
 
-**Early preview — not yet verified end to end on a production Jellyfin server.** The plugin has been compiled against Jellyfin 12.4.0. Local validation currently covers 33 JavaScript/MCP tests and 16 C# core/adapter tests. A successful local test run does not establish plugin loading, indexing, or deployment compatibility on every host.
+**Early preview.** The plugin targets Jellyfin 12.4.0. Uploads have been exercised on one actual server; the new v0.1.3 metadata repair path still requires deployment validation. Automated core, SDK adapter, HTTP, and MCP stdio tests do not establish loading/indexing compatibility on every host.
 
 WatermelonFin MCP is an independent project maintained by [@MrWeiC](https://github.com/MrWeiC). It is not affiliated with or endorsed by Jellyfin or Tailscale. The WatermelonFin Apple clients are separate applications; this repository does not include automatic Apple client pairing or a drag-and-drop upload interface.
 
@@ -14,8 +14,9 @@ WatermelonFin MCP is an independent project maintained by [@MrWeiC](https://gith
 - Inspect the local Tailscale CLI for candidate addresses and MagicDNS names.
 - Expose an onboarding recipe as an MCP prompt/resource.
 - Plan new imports and stream selected local files directly to the native upload plugin, with resumable chunks and SHA-256 verification.
+- Inspect, repair, and restore metadata/artwork of your own completed video imports, with revision history and per-item refresh/readback.
 
-There are **no delete, overwrite, existing-media reorganization, arbitrary HTTP, arbitrary filesystem, or general shell tools**. The upload plugin starts disabled and requires an explicit user allowlist. These are application controls, not an operating-system sandbox; read [SECURITY.md](SECURITY.md) before enabling uploads.
+There are **no media-deletion, video-overwrite, existing-media reorganization, arbitrary HTTP, arbitrary filesystem, or general shell tools**. Metadata repair can replace/restore bounded sidecars of owned imports; it cannot change video bytes or edit other media. The plugin starts disabled and requires an explicit user allowlist. These are application controls, not an operating-system sandbox; read [SECURITY.md](SECURITY.md).
 
 ## Requirements
 
@@ -79,6 +80,8 @@ https://raw.githubusercontent.com/MrWeiC/watermelonfin-mcp/main/catalog/manifest
 
 See [the plugin guide](docs/plugin.md) for installation, configuration, endpoint details, and deployment limits.
 
+Metadata repair requires the v0.1.3 MCP **and** native plugin. The published v0.1.2 package lacks it. See [owned-import metadata repair](docs/owned-import-metadata.md) for tools, revision/restore workflow, and upgrade verification. A local v0.1.3 build is not automatically published to the catalog.
+
 1. Install the published plugin through Jellyfin's plugin repository/catalog and restart Jellyfin.
 2. Keep uploads disabled until the administrator selects the intended import targets and allowlists a restricted user.
 3. Add only the plugin's appropriate `Imported/<target-id>` directories as Jellyfin library sources. Preserve existing source paths; never index `Staging`.
@@ -102,6 +105,11 @@ An interrupted upload can be resumed by supplying its job ID and the same file/t
 | `plan_import` | A proposal for a new filename; no file changes |
 | `inspect_upload_plugin`, `list_upload_targets` | Native plugin availability and configured targets |
 | `upload_media` | Selected-file native plugin upload/resume |
+| `inspect_import_metadata` | Fields, artwork, revision history, and verification of an owned completed video import |
+| `update_import_metadata` | Revisioned metadata replacement and exact-item refresh/readback |
+| `set_import_artwork` | Stream allowed local JPEG/PNG as primary/backdrop artwork for an owned import |
+| `restore_import_metadata` | Restore that job's earlier metadata/artwork as a new revision |
+| `refresh_import_metadata` | Reapply and refresh/read back the current owned-import revision |
 | `export_connection` | Non-secret connection metadata; does not configure Apple clients |
 | `upload_file` | Optional standalone-importer mode, only exposed when separately configured |
 

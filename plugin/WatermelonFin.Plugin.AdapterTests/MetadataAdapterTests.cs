@@ -97,10 +97,15 @@ internal static class MetadataAdapterTests
    using var json=JsonDocument.Parse(JsonSerializer.Serialize(Doc(),Jellyfin.Extensions.Json.JsonDefaults.Options));Check(json.RootElement.GetProperty("title").GetString()=="NOAH");return Task.CompletedTask;
   });
   await Test("a long folder-derived original title can be repaired and restored",async()=>{
-   var f=await Make();var original=new string('N',180)+" [2989b984d06a4870967a7aa8d65a04f6]";f.Movie.Name=original;var changed=Data(await f.Controller.Update(f.Job,new(){ExpectedRevision="initial",Metadata=Doc()}));Check(f.Movie.Name=="NOAH");
+   var f=await Make();var original=new string('N',180)+" [6d2a193854f54c6bbc8ec6c13c82cb08]";f.Movie.Name=original;var changed=Data(await f.Controller.Update(f.Job,new(){ExpectedRevision="initial",Metadata=Doc()}));Check(f.Movie.Name=="NOAH");
    var restored=Data(await f.Controller.Restore(f.Job,new(){ExpectedRevision=changed.GetProperty("revision").GetString()!,Revision="initial"}));Check(f.Movie.Name==original);Check(restored.GetProperty("verified").GetBoolean());
   });
-  Console.WriteLine($"METADATA ADAPTER RESULT: {10-failures}/10 passed");return failures;
+  await Test("incorrect existing metadata can be repaired without invalidating its restoration snapshot",async()=>{
+   var f=await Make();f.Movie.ProductionYear=1500;f.Movie.PremiereDate=new DateTime(2025,1,1,0,0,0,DateTimeKind.Utc);f.Movie.ProviderIds["Imdb"]="incorrect old identifier";f.Movie.Overview=new string('x',12000);f.Movie.Genres=Enumerable.Range(0,25).Select(i=>"old genre "+i).ToArray();
+   var result=Data(await f.Controller.Update(f.Job,new(){ExpectedRevision="initial",Metadata=Doc()}));Check(result.GetProperty("verified").GetBoolean());var restored=Data(await f.Controller.Restore(f.Job,new(){ExpectedRevision=result.GetProperty("revision").GetString()!,Revision="initial"}));
+   Check(restored.GetProperty("verified").GetBoolean());Check(f.Movie.ProductionYear==1500&&f.Movie.PremiereDate?.Year==2025);Check(f.Movie.ProviderIds["Imdb"]=="incorrect old identifier"&&f.Movie.Overview.Length==12000&&f.Movie.Genres.Length==25);
+  });
+  Console.WriteLine($"METADATA ADAPTER RESULT: {11-failures}/11 passed");return failures;
  }
  private sealed class Fixture
  {

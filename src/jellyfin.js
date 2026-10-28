@@ -14,7 +14,7 @@ export function baseURL(value) {
  return u;
 }
 function authorization(token) {
- const fields = {Client:'WatermelonFin MCP',Device:'Local Agent',DeviceId:deviceId,Version:'0.1.2',...(token?{Token:token}:{})};
+ const fields = {Client:'WatermelonFin MCP',Device:'Local Agent',DeviceId:deviceId,Version:'0.1.3',...(token?{Token:token}:{})};
  return 'MediaBrowser '+Object.entries(fields).map(([key,value])=>`${key}=${JSON.stringify(value)}`).join(', ');
 }
 async function readJSON(url,token,login) {

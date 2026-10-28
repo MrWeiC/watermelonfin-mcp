@@ -12,7 +12,7 @@ An account credential, authorized app, or integration acting on the owner's beha
 
 ## Local MCP controls
 
-- Tools are explicitly allowlisted, with strict argument validation. There are no delete, overwrite, arbitrary HTTP, arbitrary filesystem, general shell, or plugin-installer tools.
+- Tools are explicitly allowlisted, with strict argument validation. There are no media-deletion, video-overwrite, arbitrary HTTP, arbitrary filesystem, general shell, or plugin-installer tools. Owned-import metadata repair is a separate bounded capability that can replace/restore only fixed sidecars and indexed presentation.
 - Jellyfin reads target fixed endpoints. Credential login uses only `POST /Users/AuthenticateByName`; native upload requests use only the plugin's bounded capability/target/job routes. Redirects are refused, response sizes are bounded, and normal TLS validation remains enabled.
 - Credential transmission requires host-configured transport trust and server-ID consistency checks. Daily operations reject administrator and deletion-enabled users. Server IDs are not authentication.
 - Passwords/tokens are host-injected; tools do not accept them as arguments. Login tokens stay in memory and are not intentionally returned or logged. No automatic failed-login retry loop is used. The host agent and same-account processes are trusted; environment variables are not an OS secret vault. There is no built-in secure-input or keychain UI.
@@ -28,6 +28,14 @@ All destinations are inside the fixed plugin-owned `watermelonfin-imports` root.
 The plugin shares **Jellyfin's operating-system identity**. Its application checks are not an independent OS sandbox. A compromised Jellyfin process, administrator, or hostile process with the same filesystem identity may have broader rights than the plugin API. Keep the plugin root private and exclude untrusted writers. Symlink checks are not a defense against a same-identity adversary racing filesystem changes. Windows ACLs, NAS filesystems, container volumes, full server loading, and production indexing remain unverified.
 
 Limits: 50 GiB per file, 4 MiB per chunk, 100 active jobs, 24-hour job expiry, and at most four buffered chunk readers. Completed/expired records do not consume active-job count, but files are retained. There is no automatic destructive cleanup; operators must manage storage separately.
+
+## Owned-import metadata repair (v0.1.3)
+
+Every metadata read, edit, image update, restore, and refresh rechecks the restricted user, plugin allowlist, manifest owner, current target, completion, canonical video path, and exact indexed video. Completed legacy imports remain repairable after upload expiry. No arbitrary item ID, server path, remote image URL, library-wide scan, or privilege escalation is accepted.
+
+Supported metadata is strict and bounded; NFO XML is escaped and external entities are prohibited. Existing unrelated NFO nodes/provider IDs are preserved. JPEG/PNG content is size/dimension bounded, structurally checked, and decoded with Jellyfin before publishing new artwork. Prior sidecars, indexed fields/locks, and original artwork registration are journaled per job. Restore may remove only an owned metadata/artwork sidecar that was originally absent; video files are never removed or rewritten. Revision conflicts reject stale edits. Recoverable pending writes and incomplete SDK refreshes are reported without claiming verified success.
+
+Only owned-import sidecars and private journal files are written directly. Jellyfin's SDK persists that item's database/image registration. The same-OS-identity trust boundary and symlink-race limitations still apply. See [the workflow](docs/owned-import-metadata.md).
 
 ## Optional standalone importer
 
